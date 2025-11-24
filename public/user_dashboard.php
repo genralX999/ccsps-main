@@ -109,46 +109,52 @@ async function fetchChart(type, params = {}) {
 
 		const eventColors = generateColors(eventTypeData.labels.length || 1);
 
-		const eventChart = new Chart(document.getElementById('eventTypeDonut'), {
-			type: 'doughnut',
-			data: { labels: eventTypeData.labels, datasets: [{ data: eventTypeData.data, backgroundColor: eventColors, borderColor: '#ffffff', borderWidth: 1 }] },
-			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-		});
+				// plugin to draw labels outside each arc with value and percentage
+				const labelsPlugin = {
+					id: 'labelsOutside',
+					afterDraw: (chart) => {
+						const ctx = chart.ctx;
+						const data = chart.data;
+						const meta = chart.getDatasetMeta(0);
+						const total = (data.datasets && data.datasets[0] && data.datasets[0].data) ? data.datasets[0].data.reduce((s, v) => s + Number(v || 0), 0) : 0;
+						ctx.save();
+						meta.data.forEach((arc, i) => {
+							if (!arc) return;
+							const start = arc.startAngle;
+							const end = arc.endAngle;
+							const mid = (start + end) / 2;
+							const outer = arc.outerRadius || (arc._model && arc._model.outerRadius) || 0;
+							const lineStartX = arc.x + Math.cos(mid) * outer;
+							const lineStartY = arc.y + Math.sin(mid) * outer;
+							const labelX = arc.x + Math.cos(mid) * (outer + 18);
+							const labelY = arc.y + Math.sin(mid) * (outer + 18);
+							// line
+							ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lineStartX, lineStartY); ctx.lineTo(labelX, labelY); ctx.stroke();
+							// text
+							const value = (data.datasets[0].data[i] == null) ? 0 : data.datasets[0].data[i];
+							const pct = total ? Math.round((Number(value) / total) * 100) : 0;
+							const text = `${data.labels[i]}: ${value} (${pct}%)`;
+							ctx.fillStyle = '#222'; ctx.font = '12px sans-serif';
+							ctx.textAlign = (Math.cos(mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
+							const tx = (Math.cos(mid) >= 0) ? labelX + 6 : labelX - 6;
+							ctx.fillText(text, tx, labelY);
+						});
+						ctx.restore();
+					}
+				};
 
-		// generate legend on the right sorted by count and showing colors
-		(function generateLegend(chart, containerId='eventTypeLegend'){
-			const container = document.getElementById(containerId);
-			if (!container) return;
-			const labels = chart.data.labels || [];
-			const data = chart.data.datasets[0] ? chart.data.datasets[0].data : [];
-			const colors = chart.data.datasets[0] ? chart.data.datasets[0].backgroundColor || [] : [];
-			const entries = labels.map((l,i)=>({label:l,count:Number(data[i]||0),i, color: colors[i]||'#ddd'}));
-			entries.sort((a,b)=>b.count-a.count);
-			container.innerHTML='';
-			if (!entries.length) { container.innerHTML = '<div class="text-sm text-gray-500">No data</div>'; return; }
-			const table = document.createElement('table'); table.className = 'w-full text-sm';
-			const tbody = document.createElement('tbody');
-			table.appendChild(tbody);
-			entries.forEach(e=>{
-				const tr = document.createElement('tr'); tr.className = 'border-b';
-				const tdLeft = document.createElement('td'); tdLeft.className = 'py-2';
-				const left = document.createElement('div'); left.className='flex items-center gap-2 min-w-0';
-				const sw = document.createElement('span'); sw.style.width='12px'; sw.style.height='12px'; sw.style.display='inline-block'; sw.style.borderRadius='3px'; sw.style.background = e.color; sw.style.border = '1px solid rgba(0,0,0,0.08)'; left.appendChild(sw);
-				// bold count displayed before the label
-				const count = document.createElement('span'); count.style.fontWeight = '700'; count.style.marginLeft = '4px'; count.style.marginRight = '6px'; count.textContent = e.count;
-				left.appendChild(count);
-				const lbl = document.createElement('span'); lbl.textContent = e.label; lbl.style.flex = '1'; lbl.style.minWidth = '0';
-				// allow wrapping inside the table cell so long labels are readable
-				lbl.style.display = '-webkit-box'; lbl.style.webkitBoxOrient = 'vertical'; lbl.style.webkitLineClamp = '3';
-				lbl.style.overflow = 'hidden'; lbl.style.whiteSpace = 'normal'; lbl.title = e.label; left.appendChild(lbl);
-				tdLeft.appendChild(left);
-				tr.appendChild(tdLeft); tbody.appendChild(tr);
-			});
-			container.appendChild(table);
-		})(eventChart);
+				const eventChart = new Chart(document.getElementById('eventTypeDonut'), {
+						type: 'doughnut',
+						data: { labels: eventTypeData.labels, datasets: [{ data: eventTypeData.data, backgroundColor: eventColors, borderColor: '#ffffff', borderWidth: 1 }] },
+						options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+						plugins: [labelsPlugin]
+				});
 
-		// also load user donut (reuse same stats endpoint but scoped to user)
-		const userData = await fetchChartForUser('user');
+		// remove external legend list (we'll render labels on-chart)
+		try { const el = document.getElementById('eventTypeLegend'); if (el) el.innerHTML = ''; } catch (e) {}
+
+		// also load user donut (use overall user stats for the reference chart)
+		const userData = await fetchChart('user');
 		// deterministic color generator based on monitor id string
 		// hueOffset ensures user colors differ from event-type colors
 		function colorForString(s, sat=48, light=50, hueOffset=180) {
@@ -163,39 +169,12 @@ async function fetchChart(type, params = {}) {
 		const userChart = new Chart(document.getElementById('userDonut'), {
 			type: 'doughnut',
 			data: { labels: userData.labels, datasets: [{ data: userData.data, backgroundColor: userColors, borderColor: '#ffffff', borderWidth: 1 }] },
-			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+			plugins: [labelsPlugin]
 		});
 
-		// generate simple legend on the right sorted by count for user chart
-		(function generateUserLegend(chart, containerId='userDonutLegend'){
-			const container = document.getElementById(containerId);
-			if (!container) return;
-			const labels = chart.data.labels || [];
-			const data = chart.data.datasets[0] ? chart.data.datasets[0].data : [];
-			const entries = labels.map((l,i)=>({label:l,count:Number(data[i]||0),i}));
-			entries.sort((a,b)=>b.count-a.count);
-			container.innerHTML='';
-			if (!entries.length) { container.innerHTML = '<div class="text-sm text-gray-500">No data</div>'; return; }
-			const table = document.createElement('table'); table.className = 'w-full text-sm';
-			const tbody = document.createElement('tbody');
-			table.appendChild(tbody);
-			entries.forEach(e=>{
-				const tr = document.createElement('tr'); tr.className = 'border-b';
-				const tdLeft = document.createElement('td'); tdLeft.className = 'py-2';
-				const left = document.createElement('div'); left.className='flex items-center gap-2 min-w-0';
-				const sw = document.createElement('span'); sw.style.width='12px'; sw.style.height='12px'; sw.style.display='inline-block'; sw.style.borderRadius='3px';
-				const color = (chart.data.datasets[0] && chart.data.datasets[0].backgroundColor && chart.data.datasets[0].backgroundColor[e.i]) ? chart.data.datasets[0].backgroundColor[e.i] : '#ddd';
-				sw.style.background = color; sw.style.border = '1px solid rgba(0,0,0,0.08)'; left.appendChild(sw);
-				const lbl = document.createElement('span'); lbl.textContent = e.label; lbl.style.flex = '1'; lbl.style.minWidth = '0';
-				// allow wrapping inside the table cell so long labels are readable
-				lbl.style.display = '-webkit-box'; lbl.style.webkitBoxOrient = 'vertical'; lbl.style.webkitLineClamp = '3';
-				lbl.style.overflow = 'hidden'; lbl.style.whiteSpace = 'normal'; lbl.title = e.label; left.appendChild(lbl);
-				tdLeft.appendChild(left);
-				const tdRight = document.createElement('td'); tdRight.className = 'py-2 text-right text-gray-700 font-medium'; tdRight.style.width = '96px'; tdRight.textContent = e.count + (e.count===1 ? ' report' : ' reports');
-				tr.appendChild(tdLeft); tr.appendChild(tdRight); tbody.appendChild(tr);
-			});
-			container.appendChild(table);
-		})(userChart);
+		// clear the user legend list (we'll show labels on-chart)
+		try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTML = ''; } catch (e) {}
 	} else {
 		document.getElementById('totalSubmissions').textContent = '0';
 		document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');

@@ -88,67 +88,49 @@ async function fetchChart(type, params = {}) {
   return res.json();
 }
 function createDonut(ctx, labels, data, extraOptions = {}) {
-  const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
+  const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
   const options = Object.assign({}, defaultOptions, extraOptions);
   return new Chart(ctx, {
     type: 'doughnut',
     data: { labels, datasets: [{ data }] },
-    options
+    options,
+    plugins: [labelsPlugin]
   });
 }
+  // plugin to draw labels outside each arc with value and percentage
+  const labelsPlugin = {
+    id: 'labelsOutside',
+    afterDraw: (chart) => {
+      const ctx = chart.ctx;
+      const data = chart.data;
+      const meta = chart.getDatasetMeta(0);
+      const total = (data.datasets && data.datasets[0] && data.datasets[0].data) ? data.datasets[0].data.reduce((s, v) => s + Number(v || 0), 0) : 0;
+      ctx.save();
+      meta.data.forEach((arc, i) => {
+        if (!arc) return;
+        const start = arc.startAngle;
+        const end = arc.endAngle;
+        const mid = (start + end) / 2;
+        const outer = arc.outerRadius || 0;
+        const lineStartX = arc.x + Math.cos(mid) * outer;
+        const lineStartY = arc.y + Math.sin(mid) * outer;
+        const labelX = arc.x + Math.cos(mid) * (outer + 18);
+        const labelY = arc.y + Math.sin(mid) * (outer + 18);
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lineStartX, lineStartY); ctx.lineTo(labelX, labelY); ctx.stroke();
+        const value = (data.datasets[0].data[i] == null) ? 0 : data.datasets[0].data[i];
+        const pct = total ? Math.round((Number(value) / total) * 100) : 0;
+        const text = `${data.labels[i]}: ${value} (${pct}%)`;
+        ctx.fillStyle = '#222'; ctx.font = '12px sans-serif';
+        ctx.textAlign = (Math.cos(mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
+        const tx = (Math.cos(mid) >= 0) ? labelX + 6 : labelX - 6;
+        ctx.fillText(text, tx, labelY);
+      });
+      ctx.restore();
+    }
+  };
 
-function generateUserLegend(chart, containerId = 'userDonutLegend') {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const labels = chart.data.labels || [];
-  const data = chart.data.datasets && chart.data.datasets[0] && chart.data.datasets[0].data ? chart.data.datasets[0].data : [];
-  const colors = chart.data.datasets && chart.data.datasets[0] && chart.data.datasets[0].backgroundColor ? chart.data.datasets[0].backgroundColor : [];
-
-  // build entries with original index, label, count and color
-  const entries = labels.map((lab, i) => ({ index: i, label: lab, count: Number(data[i] || 0), color: colors[i] || '#ddd' }));
-
-  // sort descending by count
-  entries.sort((a, b) => b.count - a.count);
-
-  // render
-  container.innerHTML = '';
-  if (entries.length === 0) {
-    container.innerHTML = '<div class="text-sm text-gray-500">No data</div>';
-    return;
-  }
-
-  const list = document.createElement('div');
-  list.className = 'space-y-2';
-
-  entries.forEach(e => {
-    const row = document.createElement('div');
-    row.className = 'flex items-center justify-between text-sm';
-
-    const left = document.createElement('div');
-    left.className = 'flex items-center gap-2';
-    const swatch = document.createElement('span');
-    swatch.style.background = e.color;
-    swatch.style.width = '12px';
-    swatch.style.height = '12px';
-    swatch.style.display = 'inline-block';
-    swatch.style.borderRadius = '3px';
-    left.appendChild(swatch);
-    const lbl = document.createElement('span');
-    lbl.textContent = e.label;
-    left.appendChild(lbl);
-
-    const right = document.createElement('div');
-    right.className = 'text-gray-700 font-medium';
-    right.textContent = e.count + (e.count === 1 ? ' report' : ' reports');
-
-    row.appendChild(left);
-    row.appendChild(right);
-    list.appendChild(row);
-  });
-
-  container.appendChild(list);
-}
+// remove side legend (labels will be drawn on-chart)
+try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTML = ''; } catch (e) {}
 (async function(){
   const regionData = await fetchChart('region');
   createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data);
@@ -165,7 +147,7 @@ function generateUserLegend(chart, containerId = 'userDonutLegend') {
   });
 
   const userChart = createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data, { plugins: { legend: { display: false } } });
-  generateUserLegend(userChart);
+  try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTML = ''; } catch (e) {}
 
   async function loadMonitored() {
     const r = document.getElementById('filterRegion').value;
