@@ -13,14 +13,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        $stmt = $pdo->prepare("SELECT id, password_hash, role, email, email_verified, status FROM users WHERE username = :username LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, password_hash, role, email, email_verified, status, is_active FROM users WHERE username = :username LIMIT 1");
         $stmt->execute([':username' => $username]);
         $u = $stmt->fetch();
 
         if ($u && password_verify($password, $u['password_hash'])) {
 
+          // block login if account disabled
+          if (isset($u['is_active']) && intval($u['is_active']) === 0) {
+            $errors[] = 'Your account has been disabled. Contact an administrator if you think this is an error.';
           // if user has an email and it's not verified, block login
-          if (!empty($u['email']) && empty($u['email_verified'])) {
+          } elseif (!empty($u['email']) && empty($u['email_verified'])) {
             $errors[] = 'Please verify your email before logging in. Check your inbox or contact your admin.';
           } elseif (isset($u['status']) && $u['status'] !== 'approved') {
             $errors[] = 'Your account is pending approval. An admin must approve your account before you can log in.';

@@ -8,6 +8,9 @@ ob_start();
 ?>
 <h1 class="text-2xl font-semibold mb-4" style="color:#025529">Manage Users</h1>
 
+<!-- Toast container for inline messages -->
+<div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-2"></div>
+
 <div class="bg-white p-4 rounded shadow mb-4">
   <h2 class="font-semibold mb-2"></h2>
   <!-- <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-2" data-endpoint="<?= dirname(baseUrl()) ?>/api/users.php">
@@ -121,6 +124,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // handler for toggling active state (Enable/Disable)
+  // toast helper
+  const toastContainer = document.getElementById('toastContainer');
+  function showToast(message, type = 'success', timeout = 3000) {
+    if (!toastContainer) return;
+    const el = document.createElement('div');
+    el.className = 'px-4 py-2 rounded shadow text-sm transition-opacity duration-300 opacity-0';
+    el.style.pointerEvents = 'auto';
+    if (type === 'error') el.classList.add('bg-red-600','text-white');
+    else el.classList.add('bg-green-600','text-white');
+    el.textContent = message;
+    toastContainer.appendChild(el);
+    // fade in
+    requestAnimationFrame(() => { el.classList.remove('opacity-0'); el.classList.add('opacity-100'); });
+    // remove after timeout
+    setTimeout(() => { el.classList.remove('opacity-100'); el.classList.add('opacity-0'); setTimeout(() => el.remove(), 300); }, timeout);
+  }
   document.querySelectorAll('.toggle-active').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -136,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({ id: id, is_active: newVal })
         });
         const j = await res.json();
-        if (!j.success) { alert('Failed: ' + (j.error || 'unknown')); return; }
+        if (!j.success) { showToast('Failed: ' + (j.error || 'unknown'), 'error'); return; }
         // update row data and button state
         const rows = document.querySelectorAll('tr[data-user]');
         rows.forEach(r => {
@@ -155,10 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
       } catch (err) {
-        alert('Network or server error');
+        showToast('Network or server error', 'error');
+        // restore previous label on error
+        btn.textContent = prevText;
       } finally {
         btn.disabled = false;
-        btn.textContent = prevText;
       }
     });
   });
@@ -216,8 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = new FormData(); form.append('id', id);
         const res = await fetch('../api/request_resend_verification.php', {method:'POST', body: form});
         const j = await res.json();
-        if (j.success) { alert('Verification resent'); } else { alert('Failed: ' + (j.error||'unknown')); }
-      } catch (err) { alert('Network error'); }
+        if (j.success) { showToast('Verification resent', 'success'); } else { showToast('Failed: ' + (j.error||'unknown'), 'error'); }
+      } catch (err) { showToast('Network error', 'error'); }
       e.target.textContent = 'Resend';
     });
   });
@@ -226,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.send-reset').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const email = e.target.getAttribute('data-email');
-      if (!email) { alert('No email available for this user'); return; }
+      if (!email) { showToast('No email available for this user', 'error'); return; }
       if (!confirm('Send password reset to ' + email + '?')) return;
       e.target.textContent = 'Sending...';
       try {
@@ -234,8 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email })
         });
         const j = await res.json();
-        if (j.success) { alert('Reset email sent'); } else { alert('Failed: ' + (j.error||'unknown')); }
-      } catch (err) { alert('Network error'); }
+        if (j.success) { showToast('Reset email sent', 'success'); } else { showToast('Failed: ' + (j.error||'unknown'), 'error'); }
+      } catch (err) { showToast('Network error', 'error'); }
       e.target.textContent = 'Reset';
     });
   });
@@ -251,13 +271,27 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await fetch('../api/users_approve.php', { method:'POST', body: form });
           const j = await res.json();
           if (j.success) {
-            alert('User approved');
-            // update status cell in row
+            showToast('User approved', 'success');
+            // update status cell and row data; remove approve/decline buttons
             const tr = e.target.closest('tr');
-            if (tr) { tr.querySelector('td:nth-child(6)').textContent = j.status; }
-            e.target.remove();
-          } else { alert('Failed: ' + (j.error||'unknown')); }
-        } catch (err) { alert('Network error'); }
+            if (tr) {
+              // update status cell
+              const statusCell = tr.querySelector('td:nth-child(6)');
+              if (statusCell) statusCell.textContent = j.status || '';
+              // update data-user attribute
+              try {
+                const u = JSON.parse(tr.getAttribute('data-user')) || {};
+                u.status = j.status || u.status;
+                tr.setAttribute('data-user', JSON.stringify(u));
+              } catch (ex) {}
+              // remove both approve and decline buttons inside this row
+              const approveBtn = tr.querySelector('.approve-user'); if (approveBtn) approveBtn.remove();
+              const declineBtn = tr.querySelector('.decline-user'); if (declineBtn) declineBtn.remove();
+              // also remove resend button as it's not needed for approved users
+              const resendBtn = tr.querySelector('.resend-verify'); if (resendBtn) resendBtn.remove();
+            }
+          } else { showToast('Failed: ' + (j.error||'unknown'), 'error'); }
+        } catch (err) { showToast('Network error', 'error'); }
       });
     });
 
@@ -271,12 +305,23 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await fetch('../api/users_approve.php', { method:'POST', body: form });
           const j = await res.json();
           if (j.success) {
-            alert('User declined');
+            showToast('User declined', 'success');
             const tr = e.target.closest('tr');
-            if (tr) { tr.querySelector('td:nth-child(6)').textContent = j.status; }
-            e.target.remove();
-          } else { alert('Failed: ' + (j.error||'unknown')); }
-        } catch (err) { alert('Network error'); }
+            if (tr) {
+              const statusCell = tr.querySelector('td:nth-child(6)');
+              if (statusCell) statusCell.textContent = j.status || '';
+              // update data-user attribute
+              try {
+                const u = JSON.parse(tr.getAttribute('data-user')) || {};
+                u.status = j.status || u.status;
+                tr.setAttribute('data-user', JSON.stringify(u));
+              } catch (ex) {}
+              // remove approve/decline buttons
+              const approveBtn = tr.querySelector('.approve-user'); if (approveBtn) approveBtn.remove();
+              const declineBtn = tr.querySelector('.decline-user'); if (declineBtn) declineBtn.remove();
+            }
+          } else { showToast('Failed: ' + (j.error||'unknown'), 'error'); }
+        } catch (err) { showToast('Network error', 'error'); }
       });
     });
 });
