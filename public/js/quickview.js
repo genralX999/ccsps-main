@@ -72,8 +72,8 @@
         if (form._lastAct) fd.set('act', form._lastAct);
         const res = await fetch(window.CECOE_BASE + '/public/monitored_view.php?id=' + encodeURIComponent(id) + '&modal=1&ajax=1', { method: 'POST', body: fd });
         let data;
-        try { data = await res.json(); } catch (e) { alert('Server error'); return; }
-        if (!data || !data.success) { alert(data?.message || 'Save failed'); return; }
+        try { data = await res.json(); } catch (e) { showToast && showToast('Server error', 'error'); return; }
+        if (!data || !data.success) { showToast && showToast(data?.message || 'Save failed', 'error'); return; }
         if (data.deleted) { close(); document.dispatchEvent(new CustomEvent('quickview:deleted')); return; }
         const content2 = document.getElementById('quickViewContent');
         if (content2) {

@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editForm.username.value = user.username || '';
     editForm.email.value = user.email || '';
     editForm.password.value = '';
-    editMsg.textContent = '';
+    setModalMessage(editMsg, '', '');
     editModal.classList.remove('hidden');
     editModal.classList.add('flex');
   };
@@ -139,6 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => { el.classList.remove('opacity-0'); el.classList.add('opacity-100'); });
     // remove after timeout
     setTimeout(() => { el.classList.remove('opacity-100'); el.classList.add('opacity-0'); setTimeout(() => el.remove(), 300); }, timeout);
+  }
+  // modal message helper: el - element, type: 'success'|'error'|''
+  function setModalMessage(el, msg, type='') {
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.remove('text-green-600','text-red-600');
+    if (type === 'success') el.classList.add('text-green-600');
+    else if (type === 'error') el.classList.add('text-red-600');
   }
   document.querySelectorAll('.toggle-active').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -203,13 +211,13 @@ document.addEventListener('DOMContentLoaded', () => {
       email: form.get('email'),
       password: form.get('password')
     };
-    editMsg.textContent = 'Saving...';
+    setModalMessage(editMsg, 'Saving...', '');
     try {
       const res = await fetch('../api/users_update.php', {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
       });
       const j = await res.json();
-      if (!j.success) { editMsg.textContent = j.error || 'Save failed'; return; }
+      if (!j.success) { setModalMessage(editMsg, j.error || 'Save failed', 'error'); return; }
       // update row
       const rows = document.querySelectorAll('tr[data-user]');
       rows.forEach(r => {
@@ -222,9 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
           r.setAttribute('data-user', JSON.stringify(j.user));
         }
       });
-      editMsg.textContent = 'Saved.';
+      setModalMessage(editMsg, 'Saved.', 'success');
       setTimeout(closeEdit, 600);
-    } catch (err) { editMsg.textContent = 'Error saving'; }
+    } catch (err) { setModalMessage(editMsg, 'Error saving', 'error'); }
   });
 
   // Resend verification

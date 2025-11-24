@@ -220,11 +220,11 @@ function startInlineEdit(tr, type) {
   actionsCell.querySelector('.btn-cancel').addEventListener('click', ()=>{ nameCell.textContent = current; actionsCell.innerHTML = `<button class="edit px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button>`; attachRowHandlers(tr, type); });
     actionsCell.querySelector('.btn-save').addEventListener('click', async ()=>{
     const newName = nameCell.querySelector('input').value.trim();
-    if (!newName) return alert('Name required');
+      if (!newName) { showToast('Name required', 'error'); return; }
     if (type === 'region') {
       const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id, name: newName}) });
       const j = await res.json();
-      if (j.success) { await loadLists(); } else { alert(j.error === 'name_exists' ? 'A region with that name already exists.' : (j.error||JSON.stringify(j))); }
+      if (j.success) { await loadLists(); } else { showToast(j.error === 'name_exists' ? 'A region with that name already exists.' : (j.error||JSON.stringify(j)), 'error'); }
     } else {
       const payload = {type: type, id: id, name: newName};
       // include event_type_id when editing sub_event_type inline if present on the row
@@ -236,7 +236,7 @@ function startInlineEdit(tr, type) {
       }
       const res = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php', { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
       const j = await res.json();
-      if (j.success) { await loadLists(); } else { alert(j.error === 'name_exists' ? 'An item with that name already exists.' : (j.error||JSON.stringify(j))); }
+      if (j.success) { await loadLists(); } else { showToast(j.error === 'name_exists' ? 'An item with that name already exists.' : (j.error||JSON.stringify(j)), 'error'); }
     }
   });
 }
@@ -250,13 +250,13 @@ async function doDelete(type, id) {
   if (!confirm('Delete this item?')) return;
   try {
     if (type === 'region') {
-      const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id}) });
-      const j = await res.json(); if (j.success) await loadLists(); else alert(j.error||JSON.stringify(j));
+        const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id}) });
+          const j = await res.json(); if (j.success) await loadLists(); else showToast(j.error||JSON.stringify(j), 'error');
     } else {
-      const res = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: type, id: id}) });
-      const j = await res.json(); if (j.success) await loadLists(); else alert(j.error||JSON.stringify(j));
+          const res = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: type, id: id}) });
+          const j = await res.json(); if (j.success) await loadLists(); else showToast(j.error||JSON.stringify(j), 'error');
     }
-  } catch (err) { alert('Request failed: '+(err.message||err)); }
+  } catch (err) { showToast('Request failed: '+(err.message||err), 'error'); }
 }
 
 </script>
