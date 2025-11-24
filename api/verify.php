@@ -20,10 +20,12 @@ logActivity($pdo, $id, 'verify_email', 'users', $id, []);
 
 $status = $row['status'] ?? 'pending';
 // show nice HTML message
+// build a project-root URL so links to the public folder resolve correctly regardless of script dir (api vs public)
+$root = rtrim(dirname(baseUrl()), '/');
 if ($status === 'approved') {
-	$msg = 'Email verified. Your account is approved — you may now <a href="' . baseUrl() . '/login.php">log in</a>.';
+	$msg = 'Email verified. Your account is approved — you may now <a href="' . $root . '/public/login.php">log in</a>.';
 } else {
 	$msg = 'Email verified. Thank you — your account is awaiting approval by an administrator. You will be notified when approved.';
 }
 
-echo '<!doctype html><html><head><meta charset="utf-8"><title>Verification</title><link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"></head><body class="bg-gray-100 min-h-screen flex items-center justify-center"><div class="w-full max-w-lg bg-white p-6 rounded shadow text-center"><h1 class="text-xl font-semibold mb-3">Verification complete</h1><p class="mb-4">'. $msg .'</p><div><a class="px-3 py-2 rounded bg-green-700 text-white" href="' . baseUrl() . '/login.php">Go to login</a></div></div></body></html>';
+echo '<!doctype html><html><head><meta charset="utf-8"><title>Verification</title><link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"></head><body class="bg-gray-100 min-h-screen flex items-center justify-center"><div class="w-full max-w-lg bg-white p-6 rounded shadow text-center"><h1 class="text-xl font-semibold mb-3">Verification complete</h1><p class="mb-4">'. $msg .'</p><div><a class="px-3 py-2 rounded bg-green-700 text-white" href="' . $root . '/public/login.php">Go to login</a></div></div></body></html>';

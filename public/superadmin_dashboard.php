@@ -10,7 +10,7 @@ $totalMonitored = $pdo->query("SELECT COUNT(*) FROM monitored_information WHERE 
 $latestActivityCount = $pdo->query("SELECT COUNT(*) FROM activity_logs")->fetchColumn();
 
 // lists for selects
-$usersForSelect = $pdo->query("SELECT id, monitor_id_code, username FROM users ORDER BY id DESC")->fetchAll();
+$usersForSelect = $pdo->query("SELECT id, monitor_id_code, username FROM users WHERE role = 'user' ORDER BY id DESC")->fetchAll();
 $superadminCodes = $pdo->query("SELECT monitor_id_code FROM users WHERE role = 'superadmin'")->fetchAll(PDO::FETCH_COLUMN);
 $regions = $pdo->query("SELECT id, name FROM regions ORDER BY name")->fetchAll();
 $eventTypes = $pdo->query("SELECT id, name FROM event_types ORDER BY name")->fetchAll();

@@ -7,7 +7,7 @@ if ($user['role'] === 'superadmin') { header('Location: ' . baseUrl() . '/supera
 // regions, event types, and users
 $regions = $pdo->query('SELECT id, name FROM regions ORDER BY name')->fetchAll();
 $eventTypes = $pdo->query('SELECT id, name FROM event_types ORDER BY name')->fetchAll();
-$usersForSelect = $pdo->query('SELECT id, monitor_id_code, username FROM users ORDER BY id DESC')->fetchAll();
+$usersForSelect = $pdo->query("SELECT id, monitor_id_code, username FROM users WHERE role = 'user' ORDER BY id DESC")->fetchAll();
 
 ob_start();
 ?>
