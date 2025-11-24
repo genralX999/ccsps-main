@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="w-full max-w-md bg-white p-6 rounded shadow">
     <div class="flex flex-col items-center mb-4">
       <img src="/img/CECOE-logo.png" alt="CECOE" class="h-12 md:h-14 w-auto mb-3" />
-      <h1 class="text-lg md:text-xl font-semibold text-center" style="color:#025529">CECOE’s Civic Spacescanning (CCSPS) tracking tool</h1>
+      <h1 class="text-lg md:text-xl font-semibold text-center" style="color:#025529">CECOE’s Civic Spacescanning (CCSPS ) tracking tool</h1>
     </div>
 
     <?php if (!empty($errors)): ?>
