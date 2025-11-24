@@ -34,9 +34,9 @@ if (isset($data['role'])) {
     $fields[] = 'role = :role';
     $params[':role'] = $data['role'];
 }
-if (isset($data['disabled'])) {
-    $fields[] = 'disabled = :disabled';
-    $params[':disabled'] = $data['disabled'] ? 1 : 0;
+if (isset($data['is_active'])) {
+    $fields[] = 'is_active = :is_active';
+    $params[':is_active'] = $data['is_active'] ? 1 : 0;
 }
 
 try {
@@ -67,13 +67,13 @@ try {
 
     // handle password separately if provided
     if (!empty($data['password'])) {
-        $pwHash = password_hash($data['password'], PASSWORD_BCRYPT);
-        $stmt = $pdo->prepare('UPDATE users SET password = :pw WHERE id = :id');
+        $pwHash = passwordHash($data['password']);
+        $stmt = $pdo->prepare('UPDATE users SET password_hash = :pw WHERE id = :id');
         $stmt->execute([':pw' => $pwHash, ':id' => $id]);
     }
 
     // return updated row
-    $stmt = $pdo->prepare('SELECT id, username, email, role, monitor_id_code, disabled FROM users WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, username, email, role, monitor_id_code, status, is_active FROM users WHERE id = :id');
     $stmt->execute([':id' => $id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
