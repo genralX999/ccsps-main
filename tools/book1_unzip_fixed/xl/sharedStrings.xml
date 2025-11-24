@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" uniqueCount="11"><si><t>Monitors_id</t></si><si><t>Event_date</t></si><si><t>Region</t></si><si><t>Location</t></si><si><t>Event_type</t></si><si><t>Sub_event_type</t></si><si><t>Action</t></si><si><t>Source</t></si><si><t>Notes</t></si><si><t>Fatalities</t></si><si><t>Rating</t></si></sst>

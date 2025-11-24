@@ -1,0 +1,3 @@
+RewriteEngine On
+RewriteBase /
+# Route any request to index.php if file not exists (optional)
