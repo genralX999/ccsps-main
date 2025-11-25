@@ -100,6 +100,17 @@ async function fetchChart(type, params = {}) {
 	return res.json();
 }
 
+// local fallback used when shared helper is unavailable
+function localCreateDonut(ctx, labels, data, extraOptions = {}) {
+	const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+	const options = Object.assign({}, defaultOptions, extraOptions);
+	return new Chart(ctx, {
+		type: 'doughnut',
+		data: { labels, datasets: [{ data, backgroundColor: (extraOptions && extraOptions.colors) || undefined, borderColor: '#ffffff', borderWidth: 1 }] },
+		options
+	});
+}
+
 window.initDashboard = async function initDashboard(){
 	try {
 		// Event type (all monitors)
@@ -113,7 +124,7 @@ window.initDashboard = async function initDashboard(){
 			}
 			const eventColors = generateColors(eventTypeData.labels.length || 1);
 			const forceFlag = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-			const ce = (window.createDonut || function(){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors, forceRenderZeros: forceFlag });
+			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors, forceRenderZeros: forceFlag });
 			if (!ce) {
 				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
 				if (card) {
@@ -148,7 +159,7 @@ window.initDashboard = async function initDashboard(){
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
 		const forceFlag2 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-		const cu = (window.createDonut || function(){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors, forceRenderZeros: forceFlag2 });
+		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors, forceRenderZeros: forceFlag2 });
 		if (!cu) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -159,7 +170,7 @@ window.initDashboard = async function initDashboard(){
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
 		const forceFlag3 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-		const cr = (window.createDonut || function(){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data, { forceRenderZeros: forceFlag3 });
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { forceRenderZeros: forceFlag3 });
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -170,7 +181,7 @@ window.initDashboard = async function initDashboard(){
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
 		const forceFlag4 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-		const cr2 = (window.createDonut || function(){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { forceRenderZeros: forceFlag4 });
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { forceRenderZeros: forceFlag4 });
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
