@@ -79,6 +79,8 @@ ob_start();
 				<div id="monitoredTable"></div>
 		</div>
 
+<script src="<?= dirname(baseUrl()) ?>/public/js/ui-charts.js"></script>
+
 <script>
 async function fetchChartForUser(type, params = {}) {
 	const q = new URLSearchParams({...params, type, user_id: <?= (int)$user['id'] ?>});
@@ -107,71 +109,12 @@ async function fetchChart(type, params = {}) {
 
 		const eventColors = generateColors(eventTypeData.labels.length || 1);
 
-				// plugin to draw labels outside each arc with value and percentage
-				const labelsPlugin = {
-					id: 'labelsOutside',
-					afterDraw: (chart) => {
-						const ctx = chart.ctx;
-						const data = chart.data;
-						const meta = chart.getDatasetMeta(0);
-						const total = (data.datasets && data.datasets[0] && data.datasets[0].data) ? data.datasets[0].data.reduce((s, v) => s + Number(v || 0), 0) : 0;
-						ctx.save();
-						// Build items with text for all arcs, then resolve vertical collisions
-						const baseOffset = 18;
-						const minDist = 14;
-						const padding = 8;
-						const topBound = (chart.chartArea && chart.chartArea.top != null) ? (chart.chartArea.top + padding) : padding;
-						const bottomBound = (chart.chartArea && chart.chartArea.bottom != null) ? (chart.chartArea.bottom - padding) : (chart.canvas.height - padding);
-						const items = [];
-						meta.data.forEach((arc2, j) => {
-							if (!arc2) return;
-							const st = arc2.startAngle; const ed = arc2.endAngle; const md = (st + ed) / 2;
-							const out = arc2.outerRadius || 0;
-							const lsx = arc2.x + Math.cos(md) * out;
-							const lsy = arc2.y + Math.sin(md) * out;
-							const dx = arc2.x + Math.cos(md) * (out + baseOffset);
-							const dy = arc2.y + Math.sin(md) * (out + baseOffset);
-							const value = (data.datasets[0].data[j] == null) ? 0 : data.datasets[0].data[j];
-							const pct = total ? Math.round((Number(value) / total) * 100) : 0;
-							const textForItem = `${data.labels[j]}: ${value} (${pct}%)`;
-							items.push({arc: arc2, i: j, mid: md, lineStartX: lsx, lineStartY: lsy, desiredX: dx, desiredY: dy, text: textForItem});
-						});
-						items.sort((a,b) => a.desiredY - b.desiredY);
-						for (let k=0; k<items.length; k++) {
-							items[k].drawY = Math.max(items[k].desiredY, topBound);
-							if (k>0) {
-								const prev = items[k-1];
-								if (items[k].drawY - prev.drawY < minDist) items[k].drawY = prev.drawY + minDist;
-							}
-						}
-						for (let k=items.length-1; k>=0; k--) {
-							if (items[k].drawY > bottomBound) items[k].drawY = bottomBound;
-							if (k < items.length-1) {
-								const next = items[k+1];
-								if (next.drawY - items[k].drawY < minDist) items[k].drawY = next.drawY - minDist;
-							}
-						}
-						const shiftDown = topBound - (items[0] ? items[0].drawY : topBound);
-						if (shiftDown > 0) for (let k=0;k<items.length;k++) items[k].drawY += shiftDown;
-						items.sort((a,b) => a.i - b.i);
-						items.forEach(it => {
-							const labelX2 = it.desiredX;
-							const labelY2 = Math.max(topBound, Math.min(bottomBound, it.drawY));
-							const tx = (Math.cos(it.mid) >= 0) ? labelX2 + 6 : labelX2 - 6;
-							ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(it.lineStartX, it.lineStartY); ctx.lineTo(labelX2, labelY2); ctx.stroke();
-							ctx.fillStyle = '#222'; ctx.font = '12px sans-serif';
-							ctx.textAlign = (Math.cos(it.mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
-							ctx.fillText(it.text, tx, labelY2);
-						});
-					ctx.restore();
-					}
-				};
+				// labelsOutside plugin moved to shared file: /public/js/ui-charts.js
 
 				const eventChart = new Chart(document.getElementById('eventTypeDonut'), {
 						type: 'doughnut',
 						data: { labels: eventTypeData.labels, datasets: [{ data: eventTypeData.data, backgroundColor: eventColors, borderColor: '#ffffff', borderWidth: 1 }] },
-						options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-						plugins: [labelsPlugin]
+						options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
 				});
 
 		// external legend removed from markup; labels drawn on-chart by plugin
@@ -192,8 +135,7 @@ async function fetchChart(type, params = {}) {
 		const userChart = new Chart(document.getElementById('userDonut'), {
 			type: 'doughnut',
 			data: { labels: userData.labels, datasets: [{ data: userData.data, backgroundColor: userColors, borderColor: '#ffffff', borderWidth: 1 }] },
-			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-			plugins: [labelsPlugin]
+			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
 		});
 
 		// user legend container removed; labels drawn on-chart by plugin

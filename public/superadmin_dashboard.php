@@ -81,6 +81,7 @@ ob_start();
   </div>
   <div id="monitoredList"></div>
 </div>
+<script src="<?= dirname(baseUrl()) ?>/public/js/ui-charts.js"></script>
 
 <script>
 async function fetchChart(type, params = {}) {
@@ -95,84 +96,10 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
     type: 'doughnut',
     data: { labels, datasets: [{ data }] },
     options,
-    plugins: [labelsPlugin]
+    // labelsOutside plugin is registered globally via public/js/ui-charts.js
   });
 }
-  // plugin to draw labels outside each arc with value and percentage
-  const labelsPlugin = {
-    id: 'labelsOutside',
-    afterDraw: (chart) => {
-      const ctx = chart.ctx;
-      const data = chart.data;
-      const meta = chart.getDatasetMeta(0);
-      const total = (data.datasets && data.datasets[0] && data.datasets[0].data) ? data.datasets[0].data.reduce((s, v) => s + Number(v || 0), 0) : 0;
-      ctx.save();
-      const padding = 8;
-      const topBound = (chart.chartArea && chart.chartArea.top != null) ? (chart.chartArea.top + padding) : padding;
-      const bottomBound = (chart.chartArea && chart.chartArea.bottom != null) ? (chart.chartArea.bottom - padding) : (chart.canvas.height - padding);
-      // First pass: compute desired label positions
-      const baseOffset = 18;
-      const minDist = 14; // minimum vertical distance between labels
-      const items = [];
-      meta.data.forEach((arc, i) => {
-        if (!arc) return;
-        const start = arc.startAngle;
-        const end = arc.endAngle;
-        const mid = (start + end) / 2;
-        const outer = arc.outerRadius || 0;
-        const lineStartX = arc.x + Math.cos(mid) * outer;
-        const lineStartY = arc.y + Math.sin(mid) * outer;
-        const desiredX = arc.x + Math.cos(mid) * (outer + baseOffset);
-        const desiredY = arc.y + Math.sin(mid) * (outer + baseOffset);
-        items.push({ arc, i, mid, outer, lineStartX, lineStartY, desiredX, desiredY });
-      });
-      // sort by desiredY to resolve vertical collisions
-      items.sort((a,b) => a.desiredY - b.desiredY);
-      // forward pass: ensure spacing from top
-      for (let k = 0; k < items.length; k++) {
-        const it = items[k];
-        it.drawY = Math.max(it.desiredY, topBound);
-        if (k > 0) {
-          const prev = items[k-1];
-          if (it.drawY - prev.drawY < minDist) {
-            it.drawY = prev.drawY + minDist;
-          }
-        }
-      }
-      // backward pass: ensure spacing from bottom
-      for (let k = items.length - 1; k >= 0; k--) {
-        const it = items[k];
-        if (it.drawY > bottomBound) it.drawY = bottomBound;
-        if (k < items.length - 1) {
-          const next = items[k+1];
-          if (next.drawY - it.drawY < minDist) {
-            it.drawY = next.drawY - minDist;
-          }
-        }
-      }
-      // final clamp to topBound
-      const shiftDown = topBound - (items[0] ? items[0].drawY : topBound);
-      if (shiftDown > 0) {
-        for (let k = 0; k < items.length; k++) items[k].drawY += shiftDown;
-      }
-      // draw connectors and labels in original order
-      items.sort((a,b) => a.i - b.i);
-      items.forEach(it => {
-        const arc = it.arc; const i = it.i;
-        const labelX = it.desiredX;
-        const labelY = Math.max(topBound, Math.min(bottomBound, it.drawY));
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(it.lineStartX, it.lineStartY); ctx.lineTo(labelX, labelY); ctx.stroke();
-        const value = (data.datasets[0].data[i] == null) ? 0 : data.datasets[0].data[i];
-        const pct = total ? Math.round((Number(value) / total) * 100) : 0;
-        const text = `${data.labels[i]}: ${value} (${pct}%)`;
-        ctx.fillStyle = '#222'; ctx.font = '12px sans-serif';
-        ctx.textAlign = (Math.cos(it.mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
-        const tx = (Math.cos(it.mid) >= 0) ? labelX + 6 : labelX - 6;
-        ctx.fillText(text, tx, labelY);
-      });
-      ctx.restore();
-    }
-  };
+  // labelsOutside plugin is registered globally via public/js/ui-charts.js
 
 // side legend removed — labels drawn on-chart by plugin
 (async function(){
