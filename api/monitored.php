@@ -3,6 +3,8 @@ require_once __DIR__ . '/../includes/init.php';
 $region = isset($_GET['region_id']) ? intval($_GET['region_id']) : null;
 $event_type = isset($_GET['event_type_id']) ? intval($_GET['event_type_id']) : null;
 $user = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+$date_from = isset($_GET['date_from']) && $_GET['date_from'] !== '' ? $_GET['date_from'] : null;
+$date_to = isset($_GET['date_to']) && $_GET['date_to'] !== '' ? $_GET['date_to'] : null;
 $page = max(1, intval($_GET['page'] ?? 1));
 $exportCsv = isset($_GET['export']) && $_GET['export'] === 'csv';
 $per = 15;
@@ -14,6 +16,8 @@ $params = [];
 if ($region) { $where .= " AND mi.region_id = :region"; $params[':region'] = $region; }
 if ($event_type) { $where .= " AND mi.event_type_id = :etype"; $params[':etype'] = $event_type; }
 if ($user) { $where .= " AND mi.user_id = :user"; $params[':user'] = $user; }
+if ($date_from) { $where .= " AND mi.event_date >= :date_from"; $params[':date_from'] = $date_from; }
+if ($date_to) { $where .= " AND mi.event_date <= :date_to"; $params[':date_to'] = $date_to; }
 
 // prepare query with sub event alias 'se' to avoid reserved word
 $sql = "SELECT mi.*, r.name as region_name, et.name as event_type_name, se.name AS sub_event_name, a.name AS action_name, u.monitor_id_code, u.username

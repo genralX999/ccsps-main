@@ -63,22 +63,45 @@ ob_start();
 <div class="bg-white p-4 rounded shadow mb-4">
 	<h2 class="font-semibold mb-3">Filters</h2>
 	<!-- total submissions removed (not needed) -->
-	<div class="mb-3 flex gap-2 items-center">
-		<label for="filterEventType" class="text-sm text-gray-600 mr-2">Event type:</label>
-		<select id="filterEventType" class="p-2 rounded border">
-			<option value="">All event types</option>
-			<?php foreach($eventTypes as $et): ?>
-				<option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
-			<?php endforeach; ?>
-		</select>
-		<label for="filterUser" class="text-sm text-gray-600 ml-3 mr-2">User:</label>
-		<select id="filterUser" class="p-2 rounded border">
-			<option value="">All users</option>
-			<?php foreach($usersForSelect as $u): ?>
-				<option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['monitor_id_code'].' - '.$u['username']) ?></option>
-			<?php endforeach; ?>
-		</select>
-		<button id="applyFilters" class="ml-auto px-3 py-1 rounded btn-brand text-white text-sm">Apply</button>
+	<div class="mb-3 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+		<div>
+			<label for="filterRegion" class="text-sm text-gray-600 block mb-1">Region</label>
+			<select id="filterRegion" class="p-2 rounded border w-full">
+				<option value="">All regions</option>
+				<?php foreach($regions as $r): ?>
+					<option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<div>
+			<label for="filterEventType" class="text-sm text-gray-600 block mb-1">Event type</label>
+			<select id="filterEventType" class="p-2 rounded border w-full">
+				<option value="">All event types</option>
+				<?php foreach($eventTypes as $et): ?>
+					<option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<div>
+			<label for="filterUser" class="text-sm text-gray-600 block mb-1">User</label>
+			<select id="filterUser" class="p-2 rounded border w-full">
+				<option value="">All users</option>
+				<?php foreach($usersForSelect as $u): ?>
+					<option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['monitor_id_code'].' - '.$u['username']) ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<div>
+			<label for="filterDateFrom" class="text-sm text-gray-600 block mb-1">From (date)</label>
+			<input id="filterDateFrom" type="date" class="p-2 rounded border w-full" />
+		</div>
+		<div>
+			<label for="filterDateTo" class="text-sm text-gray-600 block mb-1">To (date)</label>
+			<input id="filterDateTo" type="date" class="p-2 rounded border w-full" />
+		</div>
+		<div class="flex items-center justify-end">
+			<button id="applyFilters" class="px-4 py-2 rounded btn-brand text-white text-sm">Apply filters</button>
+		</div>
 	</div>
 	<div class="flex items-center justify-end gap-2">
 		<button id="exportMonitoredBtn" class="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-white text-sm">Export CSV</button>
@@ -241,12 +264,16 @@ if (showBtn) {
 
 	async function fetchTable(page = 1) {
 	    const showAll = document.getElementById('showAll') ? document.getElementById('showAll').checked : false;
-	    const region = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+		const region = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
 	    const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
 	    const uid = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+		const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+		const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
 	    let qs = new URLSearchParams({ page });
 	    if (region) qs.set('region_id', region);
 	    if (et) qs.set('event_type_id', et);
+		if (dateFrom) qs.set('date_from', dateFrom);
+		if (dateTo) qs.set('date_to', dateTo);
 	    // user filter precedence: if a user is selected use it; else if showAll not checked default to current user
 	    if (uid) {
 	        qs.set('user_id', uid);
