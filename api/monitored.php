@@ -24,7 +24,8 @@ $sql = "SELECT mi.*, r.name as region_name, et.name as event_type_name, se.name 
   JOIN actions a ON mi.action_id = a.id
   JOIN users u ON mi.user_id = u.id
   WHERE $where
-  ORDER BY mi.created_at DESC
+   ORDER BY mi.id DESC
+
   ";
 
 // If not exporting, apply pagination

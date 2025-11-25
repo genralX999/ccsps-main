@@ -110,6 +110,10 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
       const padding = 8;
       const topBound = (chart.chartArea && chart.chartArea.top != null) ? (chart.chartArea.top + padding) : padding;
       const bottomBound = (chart.chartArea && chart.chartArea.bottom != null) ? (chart.chartArea.bottom - padding) : (chart.canvas.height - padding);
+      // First pass: compute desired label positions
+      const baseOffset = 18;
+      const minDist = 14; // minimum vertical distance between labels
+      const items = [];
       meta.data.forEach((arc, i) => {
         if (!arc) return;
         const start = arc.startAngle;
@@ -118,18 +122,52 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
         const outer = arc.outerRadius || 0;
         const lineStartX = arc.x + Math.cos(mid) * outer;
         const lineStartY = arc.y + Math.sin(mid) * outer;
-        const labelX = arc.x + Math.cos(mid) * (outer + 18);
-        let labelY = arc.y + Math.sin(mid) * (outer + 18);
-        // clamp vertical position to chart area to avoid clipping
-        if (labelY < topBound) labelY = topBound;
-        if (labelY > bottomBound) labelY = bottomBound;
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lineStartX, lineStartY); ctx.lineTo(labelX, labelY); ctx.stroke();
+        const desiredX = arc.x + Math.cos(mid) * (outer + baseOffset);
+        const desiredY = arc.y + Math.sin(mid) * (outer + baseOffset);
+        items.push({ arc, i, mid, outer, lineStartX, lineStartY, desiredX, desiredY });
+      });
+      // sort by desiredY to resolve vertical collisions
+      items.sort((a,b) => a.desiredY - b.desiredY);
+      // forward pass: ensure spacing from top
+      for (let k = 0; k < items.length; k++) {
+        const it = items[k];
+        it.drawY = Math.max(it.desiredY, topBound);
+        if (k > 0) {
+          const prev = items[k-1];
+          if (it.drawY - prev.drawY < minDist) {
+            it.drawY = prev.drawY + minDist;
+          }
+        }
+      }
+      // backward pass: ensure spacing from bottom
+      for (let k = items.length - 1; k >= 0; k--) {
+        const it = items[k];
+        if (it.drawY > bottomBound) it.drawY = bottomBound;
+        if (k < items.length - 1) {
+          const next = items[k+1];
+          if (next.drawY - it.drawY < minDist) {
+            it.drawY = next.drawY - minDist;
+          }
+        }
+      }
+      // final clamp to topBound
+      const shiftDown = topBound - (items[0] ? items[0].drawY : topBound);
+      if (shiftDown > 0) {
+        for (let k = 0; k < items.length; k++) items[k].drawY += shiftDown;
+      }
+      // draw connectors and labels in original order
+      items.sort((a,b) => a.i - b.i);
+      items.forEach(it => {
+        const arc = it.arc; const i = it.i;
+        const labelX = it.desiredX;
+        const labelY = Math.max(topBound, Math.min(bottomBound, it.drawY));
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(it.lineStartX, it.lineStartY); ctx.lineTo(labelX, labelY); ctx.stroke();
         const value = (data.datasets[0].data[i] == null) ? 0 : data.datasets[0].data[i];
         const pct = total ? Math.round((Number(value) / total) * 100) : 0;
         const text = `${data.labels[i]}: ${value} (${pct}%)`;
         ctx.fillStyle = '#222'; ctx.font = '12px sans-serif';
-        ctx.textAlign = (Math.cos(mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
-        const tx = (Math.cos(mid) >= 0) ? labelX + 6 : labelX - 6;
+        ctx.textAlign = (Math.cos(it.mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
+        const tx = (Math.cos(it.mid) >= 0) ? labelX + 6 : labelX - 6;
         ctx.fillText(text, tx, labelY);
       });
       ctx.restore();
@@ -153,7 +191,6 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
   });
 
   const userChart = createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data, { plugins: { legend: { display: false } } });
-  generateUserLegend(userChart);
 
   async function loadMonitored() {
     const r = document.getElementById('filterRegion').value;
@@ -166,6 +203,31 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
   }
   document.getElementById('applyFilters').addEventListener('click', loadMonitored);
   loadMonitored();
+
+  // pagination and read-more handling inside the monitored list
+  document.getElementById('monitoredList').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.pagination-btn');
+    if (btn) {
+      e.preventDefault();
+      const page = btn.getAttribute('data-page');
+      const r = document.getElementById('filterRegion').value;
+      const et = document.getElementById('filterEventType').value;
+      const u = document.getElementById('filterUser').value;
+      const qs = new URLSearchParams({ region_id: r, event_type_id: et, user_id: u, page });
+      const res = await fetch('<?= dirname(baseUrl()) ?>/api/monitored.php?' + qs.toString());
+      const html = await res.text();
+      document.getElementById('monitoredList').innerHTML = html;
+      return;
+    }
+    const rm = e.target.closest('.read-more');
+    if (rm) {
+      e.preventDefault();
+      const cell = rm.closest('td');
+      const short = cell.querySelector('.note-short');
+      const full = cell.querySelector('.note-full');
+      if (short && full) { short.classList.toggle('hidden'); full.classList.toggle('hidden'); rm.textContent = rm.textContent === 'Read more' ? 'Show less' : 'Read more'; }
+    }
+  });
 
   const csvBtn = document.getElementById('exportAdminMonitored');
   if (csvBtn) {
