@@ -104,6 +104,12 @@ async function fetchChart(type, params = {}) {
   const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
   return res.json();
 }
+// page-level palette helper: prefer shared `window.getChartColors` when available
+function pageGenerateColors(n, sat=62, light=56, hueOffset=0) {
+  if (window.getChartColors) return window.getChartColors(n, sat, light, hueOffset);
+  if (!n || n <= 0) return ['hsl(200,60%,60%)'];
+  return Array.from({length: n}, (_, i) => `hsl(${Math.round((i * 360 / n) + hueOffset) % 360}, ${sat}%, ${light}%)`);
+}
 // Prefer the shared createDonut helper from ui-charts.js; fallback to local creation
 function localCreateDonut(ctx, labels, data, extraOptions = {}) {
   try {
@@ -142,10 +148,11 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 (async function(){
   try {
     // load and render 4 charts: region, event type, user (encoders), rating
-    const regionData = await fetchChart('region');
+      const regionData = await fetchChart('region');
     try {
       console.debug('regionData', regionData);
-      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+      const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
+      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { colors: regionColors });
       if (!c) {
         const card = document.getElementById('regionDonut').closest('.bg-white');
         if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -154,8 +161,7 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 
     const eventTypeData = await fetchChart('event_type');
     // generate colors for event type chart
-    function generateColors(n, sat=62, light=56) { return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`); }
-    const eventColors = generateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
+    const eventColors = pageGenerateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
     try {
       console.debug('eventTypeData', eventTypeData);
       const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
@@ -174,14 +180,16 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     });
     try {
       console.debug('userData(filtered)', filtered);
-      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data);
+      const userColors = pageGenerateColors((filtered && filtered.labels ? filtered.labels.length : 0) || 1);
+      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data, { colors: userColors });
       if (!cu) { const card = document.getElementById('userDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('user chart failed', e); }
 
     try {
       const ratingData = await fetchChart('rating');
       console.debug('ratingData', ratingData);
-      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
+      const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
+      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { colors: ratingColors });
       if (!cr) { const card = document.getElementById('ratingDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('rating chart failed', e); }
   } catch (err) {

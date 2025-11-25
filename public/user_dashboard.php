@@ -100,6 +100,13 @@ async function fetchChart(type, params = {}) {
 	return res.json();
 }
 
+// page-level palette helper: prefer shared `window.getChartColors` when available
+function pageGenerateColors(n, sat=62, light=56, hueOffset=0) {
+    if (window.getChartColors) return window.getChartColors(n, sat, light, hueOffset);
+    if (!n || n <= 0) return ['hsl(200,60%,60%)'];
+    return Array.from({length: n}, (_, i) => `hsl(${Math.round((i * 360 / n) + hueOffset) % 360}, ${sat}%, ${light}%)`);
+}
+
 // local fallback used when shared helper is unavailable
 function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 	try {
@@ -140,10 +147,7 @@ window.initDashboard = async function initDashboard(){
 		if (eventTypeData && eventTypeData.labels && eventTypeData.data) {
 			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
 
-			function generateColors(n, sat=62, light=56) {
-				return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`);
-			}
-			const eventColors = generateColors(eventTypeData.labels.length || 1);
+			const eventColors = pageGenerateColors(eventTypeData.labels.length || 1);
 			const forceFlag = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
 			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors, forceRenderZeros: forceFlag });
 			if (!ce) {
@@ -191,7 +195,8 @@ window.initDashboard = async function initDashboard(){
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
 		const forceFlag3 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { forceRenderZeros: forceFlag3 });
+		const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { forceRenderZeros: forceFlag3, colors: regionColors });
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -202,7 +207,8 @@ window.initDashboard = async function initDashboard(){
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
 		const forceFlag4 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { forceRenderZeros: forceFlag4 });
+		const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { forceRenderZeros: forceFlag4, colors: ratingColors });
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
