@@ -118,31 +118,36 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
   // labelsOutside plugin is registered globally via public/js/ui-charts.js
 
 // side legend removed — labels drawn on-chart by plugin
+// wrap dashboard logic to catch errors and report visibly
 (async function(){
-  // load and render 4 charts: region, event type, user (encoders), rating
-  const regionData = await fetchChart('region');
-  createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+  try {
+    // load and render 4 charts: region, event type, user (encoders), rating
+    const regionData = await fetchChart('region');
+    try { createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data); } catch(e){ console.error('region chart failed', e); }
 
-  const eventTypeData = await fetchChart('event_type');
-  // generate colors for event type chart
-  function generateColors(n, sat=62, light=56) { return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`); }
-  const eventColors = generateColors(eventTypeData.labels.length || 1);
-  createDonut(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+    const eventTypeData = await fetchChart('event_type');
+    // generate colors for event type chart
+    function generateColors(n, sat=62, light=56) { return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`); }
+    const eventColors = generateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
+    try { createDonut(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors }); } catch(e){ console.error('eventType chart failed', e); }
 
-  const userData = await fetchChart('user');
-  // filter out any superadmin monitor codes from labels and data
-  const superadminCodes = <?= json_encode(array_values($superadminCodes)) ?>;
-  const filtered = { labels: [], data: [] };
-  (userData.labels || []).forEach((lab, i) => {
-    if (!superadminCodes.includes(lab) && (userData.data && Number(userData.data[i] || 0) > 0)) {
-      filtered.labels.push(lab);
-      filtered.data.push(userData.data[i]);
-    }
-  });
-  createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data);
+    const userData = await fetchChart('user');
+    // filter out any superadmin monitor codes from labels and data
+    const superadminCodes = <?= json_encode(array_values($superadminCodes)) ?>;
+    const filtered = { labels: [], data: [] };
+    (userData && userData.labels || []).forEach((lab, i) => {
+      if (!superadminCodes.includes(lab) && (userData.data && Number(userData.data[i] || 0) > 0)) {
+        filtered.labels.push(lab);
+        filtered.data.push(userData.data[i]);
+      }
+    });
+    try { createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data); } catch(e){ console.error('user chart failed', e); }
 
-  const ratingData = await fetchChart('rating');
-  createDonut(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
+    try { const ratingData = await fetchChart('rating'); createDonut(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data); } catch(e){ console.error('rating chart failed', e); }
+  } catch (err) {
+    console.error('Dashboard init error', err);
+    if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
+  }
 
   async function loadMonitored() {
     const r = document.getElementById('filterRegion').value;

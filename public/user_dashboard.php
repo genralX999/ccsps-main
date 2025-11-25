@@ -23,57 +23,53 @@ ob_start();
 					<div class="mb-3">
 					<span class="text-sm text-gray-600">Total submissions:</span>
 					<span id="totalSubmissions" class="ml-2 font-bold">0</span>
-				</div>
-										<div class="h-48 flex items-center justify-center">
-												<div style="width:100%;max-width:520px;">
-													<canvas id="eventTypeDonut" style="width:100%;height:100%;max-height:240px;"></canvas>
-												</div>
-										</div>
-		</div>
+					<script>
+					async function fetchChartForUser(type, params = {}) {
+							const q = new URLSearchParams({...params, type, user_id: <?= (int)$user['id'] ?>});
+							const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
+							return res.json();
+					}
 
-		<div class="bg-white p-4 rounded shadow">
-			<h2 class="font-semibold mb-3">Encoded Data by Region</h2>
-			<div class="h-48 flex items-center justify-center">
-			  <div style="width:100%;max-width:520px;height:192px;">
-				<canvas id="regionDonut" style="width:100%;height:100%;"></canvas>
-			  </div>
-			</div>
-		</div>
+					// generic chart fetch (no user scoping) for overall stats
+					async function fetchChart(type, params = {}) {
+							const q = new URLSearchParams({...params, type});
+							const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
+							return res.json();
+					}
 
-		<div class="bg-white p-4 rounded shadow">
-			<h2 class="font-semibold mb-3">Encoded Data by User</h2>
-			<div class="flex items-center justify-center">
-				<div style="width:100%;max-width:520px;height:192px;">
-					<canvas id="userDonut" style="width:100%;height:100%;"></canvas>
-				</div>
-			</div>
-		</div>
+					(async function(){
+						try {
+							const eventTypeData = await fetchChart('event_type', { exclude_superadmin: 1 });
+							if (eventTypeData && eventTypeData.labels && eventTypeData.data) {
+								const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
+								document.getElementById('totalSubmissions').textContent = total;
 
-		<div class="bg-white p-4 rounded shadow">
-			<h2 class="font-semibold mb-3">Reports by Rating</h2>
-			<div class="h-48 flex items-center justify-center">
-			  <div style="width:100%;max-width:520px;height:192px;">
-				<canvas id="ratingDonut" style="width:100%;height:100%;"></canvas>
-			  </div>
-			</div>
-		</div>
-</div>
+								function generateColors(n, sat=62, light=56) { return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`); }
+								const eventColors = generateColors(eventTypeData.labels.length || 1);
+								try { (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors }); } catch(e){ console.error('event chart failed', e); }
 
-		<div class="bg-white p-4 rounded shadow mb-6">
-				<h2 class="font-semibold mb-3">Your Submissions</h2>
-				<div class="flex items-center gap-3 mb-3">
-					<label class="inline-flex items-center">
-						<input id="showAll" type="checkbox" class="form-checkbox h-4 w-4 text-green-600" />
-						<span class="ml-2 text-sm">Show all submissions</span>
-					</label>
-					<select id="filterRegion" class="p-2 rounded border">
-						<option value="">All regions</option>
-						<?php foreach($regions as $r): ?>
-							<option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
-						<?php endforeach; ?>
-					</select>
-					<select id="filterEventType" class="p-2 rounded border">
-						<option value="">All event types</option>
+								const userData = await fetchChart('user');
+								function colorForString(s, sat=48, light=50, hueOffset=180) {
+									let h = 0;
+									for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) % 360; }
+									h = (h + hueOffset) % 360;
+									return `hsl(${h}, ${sat}%, ${light}%)`;
+								}
+								const userColors = (userData && userData.labels) ? userData.labels.map(l => colorForString(l || String(Math.random()))) : [];
+								try { (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors }); } catch(e){ console.error('user chart failed', e); }
+
+								try { const regionData = await fetchChart('region'); (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data); } catch(e){ console.error('region chart failed', e); }
+								try { const ratingData = await fetchChart('rating'); (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data); } catch(e){ console.error('rating chart failed', e); }
+							} else {
+								document.getElementById('totalSubmissions').textContent = '0';
+								document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+							}
+						} catch (err) {
+							console.error('Dashboard init error', err);
+							if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
+						}
+					})();
+					</script>
 						<?php foreach($eventTypes as $et): ?>
 							<option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
 						<?php endforeach; ?>
@@ -99,46 +95,51 @@ ob_start();
 async function fetchChartForUser(type, params = {}) {
 	const q = new URLSearchParams({...params, type, user_id: <?= (int)$user['id'] ?>});
 	const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
-	return res.json();
-}
+	// Initialize charts with guards so one failure doesn't block the rest
+	(async function(){
+	  try {
+		// overall event-type donut (all monitors)
+		const eventTypeData = await fetchChart('event_type', { exclude_superadmin: 1 });
+		if (eventTypeData && eventTypeData.labels && eventTypeData.data) {
+			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
+			document.getElementById('totalSubmissions').textContent = total;
 
-// generic chart fetch (no user scoping) for overall stats
-async function fetchChart(type, params = {}) {
-	const q = new URLSearchParams({...params, type});
-	const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
-	return res.json();
-}
-
-(async function(){
-	// overall event-type donut (all monitors)
-	const eventTypeData = await fetchChart('event_type', { exclude_superadmin: 1 });
-	if (eventTypeData && eventTypeData.labels && eventTypeData.data) {
-		const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
-		document.getElementById('totalSubmissions').textContent = total;
-
-		// generate colors for this chart (distinct from user chart)
-		function generateColors(n, sat=62, light=56) {
-			return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`);
-		}
-
-		const eventColors = generateColors(eventTypeData.labels.length || 1);
-
-				// labelsOutside plugin moved to shared file: /public/js/ui-charts.js
-
-				const eventChart = (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
-
-		// external legend removed from markup; labels drawn on-chart by plugin
-
-		// also load user donut (use overall user stats for the reference chart)
-		const userData = await fetchChart('user');
-		// deterministic color generator based on monitor id string
-		// hueOffset ensures user colors differ from event-type colors
-		function colorForString(s, sat=48, light=50, hueOffset=180) {
-			let h = 0;
-			for (let i = 0; i < s.length; i++) {
-				h = (h * 31 + s.charCodeAt(i)) % 360;
+			// generate colors for this chart (distinct from user chart)
+			function generateColors(n, sat=62, light=56) {
+				return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`);
 			}
-			h = (h + hueOffset) % 360;
+
+			const eventColors = generateColors(eventTypeData.labels.length || 1);
+			try { (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors }); } catch(e){ console.error('event chart failed', e); }
+
+			// also load user donut (use overall user stats for the reference chart)
+			const userData = await fetchChart('user');
+			// deterministic color generator based on monitor id string
+			// hueOffset ensures user colors differ from event-type colors
+			function colorForString(s, sat=48, light=50, hueOffset=180) {
+				let h = 0;
+				for (let i = 0; i < s.length; i++) {
+					h = (h * 31 + s.charCodeAt(i)) % 360;
+				}
+				h = (h + hueOffset) % 360;
+				return `hsl(${h}, ${sat}%, ${light}%)`;
+			}
+			const userColors = (userData && userData.labels || []).map(l => colorForString(l || String(Math.random())));
+			try { (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors }); } catch(e){ console.error('user chart failed', e); }
+
+			// region chart (overall)
+			try { const regionData = await fetchChart('region'); (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data); } catch(e){ console.error('region chart failed', e); }
+
+			// rating chart
+			try { const ratingData = await fetchChart('rating'); (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data); } catch(e){ console.error('rating chart failed', e); }
+		} else {
+			document.getElementById('totalSubmissions').textContent = '0';
+			document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+		}
+	  } catch (err) {
+		console.error('Dashboard init error', err);
+		if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
+	  }
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData.labels || []).map(l => colorForString(l || String(Math.random())));
