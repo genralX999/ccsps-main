@@ -53,31 +53,35 @@ ob_start();
 	</div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-		<div class="bg-white p-4 rounded shadow">
-				<h2 class="font-semibold mb-3">Reports by Event Type (All Monitors)</h2>
-					<div class="mb-3">
-					<span class="text-sm text-gray-600">Total submissions:</span>
-					<span id="totalSubmissions" class="ml-2 font-bold">0</span>
-						<?php foreach($eventTypes as $et): ?>
-							<option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
-						<?php endforeach; ?>
-					</select>
-					<select id="filterUser" class="p-2 rounded border">
-						<option value="">All users</option>
-						<?php foreach($usersForSelect as $u): ?>
-							<option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['monitor_id_code'].' - '.$u['username']) ?></option>
-						<?php endforeach; ?>
-					</select>
-					<button id="applyFilters" class="ml-auto px-3 py-1 rounded btn-brand text-white text-sm">Apply</button>
-				</div>
-				<div class="flex items-center justify-end gap-2 mb-2">
-					<button id="exportMonitoredBtn" class="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-white text-sm"></button>
-					<button id="exportXlsxBtn" class="ml-2 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">Export XLSX</button>
-				</div>
+<div class="bg-white p-4 rounded shadow mb-4">
+	<h2 class="font-semibold mb-3">Filters</h2>
+	<div class="mb-3 flex gap-2 items-center">
+		<label class="text-sm text-gray-600 mr-2">Event type:</label>
+		<select id="filterEventType" class="p-2 rounded border">
+			<option value="">All event types</option>
+			<?php foreach($eventTypes as $et): ?>
+				<option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
+			<?php endforeach; ?>
+		</select>
+		<label class="text-sm text-gray-600 ml-3 mr-2">User:</label>
+		<select id="filterUser" class="p-2 rounded border">
+			<option value="">All users</option>
+			<?php foreach($usersForSelect as $u): ?>
+				<option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['monitor_id_code'].' - '.$u['username']) ?></option>
+			<?php endforeach; ?>
+		</select>
+		<button id="applyFilters" class="ml-auto px-3 py-1 rounded btn-brand text-white text-sm">Apply</button>
+	</div>
+	<div class="flex items-center justify-end gap-2">
+		<button id="exportMonitoredBtn" class="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-white text-sm">Export CSV</button>
+		<button id="exportXlsxBtn" class="ml-2 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">Export XLSX</button>
+	</div>
+</div>
 
-				<div id="monitoredTable"></div>
-		</div>
+<div id="monitoredTableCard" class="bg-white p-4 rounded shadow">
+	<h3 class="font-semibold mb-3">Monitored Records</h3>
+	<div id="monitoredTable"></div>
+</div>
 
 <script src="<?= dirname(baseUrl()) ?>/public/js/ui-charts.js"></script>
 
@@ -109,6 +113,18 @@ async function fetchChart(type, params = {}) {
 					card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
 				}
 			}
+			// debug payload display when ?debug_charts=1 is present
+			try {
+				if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) {
+					const card = document.getElementById('eventTypeDonut').closest('.bg-white');
+					if (card) {
+						const pre = document.createElement('pre');
+						pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700';
+						pre.textContent = JSON.stringify(eventTypeData, null, 2);
+						card.appendChild(pre);
+					}
+				}
+			} catch(e) { /* ignore */ }
 		} else {
 			document.getElementById('totalSubmissions').textContent = '0';
 			const _card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (_card) { const c = _card.querySelector('canvas'); if (c) c.remove(); _card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -129,6 +145,7 @@ async function fetchChart(type, params = {}) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
 		}
+		try { if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) { const card = document.getElementById('userDonut').closest('.bg-white'); if (card) { const pre = document.createElement('pre'); pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700'; pre.textContent = JSON.stringify(userData, null, 2); card.appendChild(pre); } } } catch(e){}
 
 		// Region chart
 		const regionData = await fetchChart('region');
@@ -138,6 +155,7 @@ async function fetchChart(type, params = {}) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
 		}
+		try { if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) { const card = document.getElementById('regionDonut').closest('.bg-white'); if (card) { const pre = document.createElement('pre'); pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700'; pre.textContent = JSON.stringify(regionData, null, 2); card.appendChild(pre); } } } catch(e){}
 
 		// Rating chart
 		const ratingData = await fetchChart('rating');
@@ -147,6 +165,7 @@ async function fetchChart(type, params = {}) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
 		}
+		try { if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) { const card = document.getElementById('ratingDonut').closest('.bg-white'); if (card) { const pre = document.createElement('pre'); pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700'; pre.textContent = JSON.stringify(ratingData, null, 2); card.appendChild(pre); } } } catch(e){}
 
 	} catch (err) {
 		console.error('Dashboard init error', err);
