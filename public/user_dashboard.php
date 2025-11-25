@@ -55,16 +55,16 @@ ob_start();
 
 <div class="bg-white p-4 rounded shadow mb-4">
 	<h2 class="font-semibold mb-3">Filters</h2>
-	<div class="text-sm text-gray-600 mb-2">Total submissions: <span id="totalSubmissions" class="ml-2 font-bold">0</span></div>
+	<!-- total submissions removed (not needed) -->
 	<div class="mb-3 flex gap-2 items-center">
-		<label class="text-sm text-gray-600 mr-2">Event type:</label>
+		<label for="filterEventType" class="text-sm text-gray-600 mr-2">Event type:</label>
 		<select id="filterEventType" class="p-2 rounded border">
 			<option value="">All event types</option>
 			<?php foreach($eventTypes as $et): ?>
 				<option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
 			<?php endforeach; ?>
 		</select>
-		<label class="text-sm text-gray-600 ml-3 mr-2">User:</label>
+		<label for="filterUser" class="text-sm text-gray-600 ml-3 mr-2">User:</label>
 		<select id="filterUser" class="p-2 rounded border">
 			<option value="">All users</option>
 			<?php foreach($usersForSelect as $u): ?>
@@ -100,8 +100,6 @@ async function fetchChart(type, params = {}) {
 		console.debug('eventTypeData', eventTypeData);
 		if (eventTypeData && eventTypeData.labels && eventTypeData.data) {
 			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
-			const totalEl = document.getElementById('totalSubmissions');
-			if (totalEl) totalEl.textContent = total;
 
 			function generateColors(n, sat=62, light=56) {
 				return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`);
@@ -128,8 +126,6 @@ async function fetchChart(type, params = {}) {
 				}
 			} catch(e) { /* ignore */ }
 		} else {
-			const totalEl2 = document.getElementById('totalSubmissions');
-			if (totalEl2) totalEl2.textContent = '0';
 			const _card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (_card) { const c = _card.querySelector('canvas'); if (c) c.remove(); _card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
 		}
 
