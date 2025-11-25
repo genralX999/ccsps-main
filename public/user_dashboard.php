@@ -99,8 +99,9 @@ ob_start();
 			<label for="filterDateTo" class="text-sm text-gray-600 block mb-1">To (date)</label>
 			<input id="filterDateTo" type="date" class="p-2 rounded border w-full" />
 		</div>
-		<div class="flex items-center justify-end">
+		<div class="flex items-center justify-end gap-2">
 			<button id="applyFilters" class="px-4 py-2 rounded btn-brand text-white text-sm">Apply filters</button>
+			<button id="clearFilters" class="px-4 py-2 rounded border text-sm">Clear</button>
 		</div>
 	</div>
 	<div class="flex items-center justify-end gap-2">
@@ -263,7 +264,6 @@ if (showBtn) {
 	const tableContainer = document.getElementById('monitoredTable');
 
 	async function fetchTable(page = 1) {
-	    const showAll = document.getElementById('showAll') ? document.getElementById('showAll').checked : false;
 		const region = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
 	    const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
 	    const uid = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
@@ -274,12 +274,8 @@ if (showBtn) {
 	    if (et) qs.set('event_type_id', et);
 		if (dateFrom) qs.set('date_from', dateFrom);
 		if (dateTo) qs.set('date_to', dateTo);
-	    // user filter precedence: if a user is selected use it; else if showAll not checked default to current user
-	    if (uid) {
-	        qs.set('user_id', uid);
-	    } else if (!showAll) {
-	        qs.set('user_id', '<?= (int)$user['id'] ?>');
-	    }
+		// user filter: only include when explicitly selected
+		if (uid) qs.set('user_id', uid);
 	    const url = '<?= dirname(baseUrl()) ?>/api/monitored.php?' + qs.toString();
 	    const res = await fetch(url);
 	    const html = await res.text();
@@ -353,32 +349,60 @@ if (showBtn) {
 	    }
 	});
 
-	// react to showAll toggle
-	const showAllEl = document.getElementById('showAll');
-	if (showAllEl) showAllEl.addEventListener('change', async () => { await fetchTable(1); });
-
 	document.getElementById('applyFilters').addEventListener('click', async () => { await fetchTable(1); });
+
+	// Clear filters button resets inputs and reloads table
+	const clearBtn = document.getElementById('clearFilters');
+	if (clearBtn) {
+		clearBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			const f = document.getElementById('filterRegion'); if (f) f.value = '';
+			const fe = document.getElementById('filterEventType'); if (fe) fe.value = '';
+			const fu = document.getElementById('filterUser'); if (fu) fu.value = '';
+			const df = document.getElementById('filterDateFrom'); if (df) df.value = '';
+			const dt = document.getElementById('filterDateTo'); if (dt) dt.value = '';
+			fetchTable(1);
+		});
+	}
 
 	// export CSV
 	document.getElementById('exportMonitoredBtn').addEventListener('click', async () => {
-	    const showAll = document.getElementById('showAll') ? document.getElementById('showAll').checked : false;
-	    let url = '<?= dirname(baseUrl()) ?>/api/monitored.php?export=csv';
-	    if (!showAll) url += '&user_id=<?= (int)$user['id'] ?>';
-	    // navigate to url to trigger download
-	    window.location = url;
+		const region = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+		const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
+		const uid = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+		const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+		const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+		let url = '<?= dirname(baseUrl()) ?>/api/monitored.php?export=csv';
+		if (region) url += '&region_id=' + encodeURIComponent(region);
+		if (et) url += '&event_type_id=' + encodeURIComponent(et);
+		if (uid) url += '&user_id=' + encodeURIComponent(uid);
+		if (dateFrom) url += '&date_from=' + encodeURIComponent(dateFrom);
+		if (dateTo) url += '&date_to=' + encodeURIComponent(dateTo);
+		// navigate to url to trigger download
+		window.location = url;
 	});
 
 	// export XLSX
 	const exportXlsxBtn = document.getElementById('exportXlsxBtn');
 	if (exportXlsxBtn) {
 	    exportXlsxBtn.addEventListener('click', async () => {
-	        const showAll = document.getElementById('showAll') ? document.getElementById('showAll').checked : false;
-	        let url = '<?= dirname(baseUrl()) ?>/api/export_monitored_xlsx.php?';
-	        if (!showAll) url += 'user_id=<?= (int)$user['id'] ?>'; else url += 'show_all=1';
-	        // prevent double navigation by disabling briefly
-	        exportXlsxBtn.disabled = true;
-	        window.location = url;
-	        setTimeout(() => { exportXlsxBtn.disabled = false; }, 1500);
+			const region = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+			const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
+			const uid = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+			const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+			const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+			let url = '<?= dirname(baseUrl()) ?>/api/export_monitored_xlsx.php?';
+			const qs = new URLSearchParams();
+			if (region) qs.set('region_id', region);
+			if (et) qs.set('event_type_id', et);
+			if (uid) qs.set('user_id', uid);
+			if (dateFrom) qs.set('date_from', dateFrom);
+			if (dateTo) qs.set('date_to', dateTo);
+			url += qs.toString();
+			// prevent double navigation by disabling briefly
+			exportXlsxBtn.disabled = true;
+			window.location = url;
+			setTimeout(() => { exportXlsxBtn.disabled = false; }, 1500);
 	    });
 	}
 
