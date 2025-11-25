@@ -37,18 +37,19 @@ ob_start();
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <div class="bg-white p-4 rounded shadow">
     <h2 class="font-semibold mb-3">Encoded Data by Region</h2>
-    <div class="h-48">
-      <canvas id="regionDonut" style="max-height:100%;"></canvas>
+    <div class="h-48 flex items-center justify-center">
+      <div style="width:100%;max-width:520px;height:192px;">
+        <canvas id="regionDonut" style="width:100%;height:100%;"></canvas>
+      </div>
     </div>
   </div>
   <div class="bg-white p-4 rounded shadow">
     <h2 class="font-semibold mb-3">Encoded Data by User</h2>
     <!-- user filter removed — chart shows all users (superadmin monitor IDs are excluded) -->
-    <div class="flex flex-col md:flex-row items-start gap-4">
-      <div class="md:w-1/2 h-48">
-        <canvas id="userDonut" style="max-height:100%;"></canvas>
+    <div class="h-48 flex items-center justify-center">
+      <div style="width:100%;max-width:520px;height:192px;">
+        <canvas id="userDonut" style="width:100%;height:100%;"></canvas>
       </div>
-      <div id="userDonutLegend" class="md:w-1/2 max-h-48 overflow-auto p-2"></div>
     </div>
   </div>
 </div>
@@ -129,8 +130,7 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
     }
   };
 
-// remove side legend (labels will be drawn on-chart)
-try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTML = ''; } catch (e) {}
+// side legend removed — labels drawn on-chart by plugin
 (async function(){
   const regionData = await fetchChart('region');
   createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data);
@@ -147,7 +147,7 @@ try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTM
   });
 
   const userChart = createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data, { plugins: { legend: { display: false } } });
-  try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTML = ''; } catch (e) {}
+  generateUserLegend(userChart);
 
   async function loadMonitored() {
     const r = document.getElementById('filterRegion').value;

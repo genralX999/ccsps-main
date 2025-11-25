@@ -24,12 +24,11 @@ ob_start();
 					<span class="text-sm text-gray-600">Total submissions:</span>
 					<span id="totalSubmissions" class="ml-2 font-bold">0</span>
 				</div>
-					<div class="h-48 flex">
-					    <div class="w-2/3">
-						<canvas id="eventTypeDonut" style="max-height:100%;"></canvas>
-					    </div>
-						<div id="eventTypeLegend" class="w-1/3 p-2 max-h-48 overflow-y-auto overflow-x-hidden"></div>
-					</div>
+										<div class="h-48 flex items-center justify-center">
+												<div style="width:100%;max-width:520px;">
+													<canvas id="eventTypeDonut" style="width:100%;height:100%;max-height:240px;"></canvas>
+												</div>
+										</div>
 		</div>
 		<!-- <div class="bg-white p-4 rounded shadow">
 				<h2 class="font-semibold mb-3">Your Recent Submissions</h2>
@@ -38,11 +37,10 @@ ob_start();
 
 		<div class="bg-white p-4 rounded shadow">
 			<h2 class="font-semibold mb-3">Encoded Data by User</h2>
-			<div class="flex flex-col md:flex-row items-start gap-4">
-				<div class="md:w-1/2 h-48">
-					<canvas id="userDonut" style="max-height:100%;"></canvas>
+			<div class="flex items-center justify-center">
+				<div style="width:100%;max-width:520px;height:192px;">
+					<canvas id="userDonut" style="width:100%;height:100%;"></canvas>
 				</div>
-				<div id="userDonutLegend" class="md:w-1/2 max-h-48 overflow-auto p-2"></div>
 			</div>
 		</div>
 </div>
@@ -150,8 +148,7 @@ async function fetchChart(type, params = {}) {
 						plugins: [labelsPlugin]
 				});
 
-		// remove external legend list (we'll render labels on-chart)
-		try { const el = document.getElementById('eventTypeLegend'); if (el) el.innerHTML = ''; } catch (e) {}
+		// external legend removed from markup; labels drawn on-chart by plugin
 
 		// also load user donut (use overall user stats for the reference chart)
 		const userData = await fetchChart('user');
@@ -173,8 +170,7 @@ async function fetchChart(type, params = {}) {
 			plugins: [labelsPlugin]
 		});
 
-		// clear the user legend list (we'll show labels on-chart)
-		try { const el = document.getElementById('userDonutLegend'); if (el) el.innerHTML = ''; } catch (e) {}
+		// user legend container removed; labels drawn on-chart by plugin
 	} else {
 		document.getElementById('totalSubmissions').textContent = '0';
 		document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
