@@ -94,6 +94,24 @@
     }
   }
   registerPlugin();
+  // helper to generate a pleasing HSL-based color palette
+  function generateColors(n, sat=62, light=56, hueOffset=0) {
+    if (!n || n <= 0) return ['hsl(200,60%,60%)'];
+    return Array.from({length: n}, (_, i) => `hsl(${Math.round((i * 360 / n) + hueOffset) % 360}, ${sat}%, ${light}%)`);
+  }
+  window.getChartColors = generateColors;
+  // set some safe defaults when Chart becomes available
+  (function setDefaultsWhenReady(){
+    if (window.Chart && Chart.defaults) {
+      try {
+        if (!Chart.defaults.color) Chart.defaults.color = '#222';
+        if (!Chart.defaults.font) Chart.defaults.font = Chart.defaults.font || {};
+        Chart.defaults.font.family = Chart.defaults.font.family || 'sans-serif';
+      } catch(e){}
+    } else {
+      setTimeout(setDefaultsWhenReady, 50);
+    }
+  })();
   // helper to create a donut, removes zero-value slices and returns Chart instance
   window.createDonut = function(ctxOrSelector, labels, data, extraOptions = {}) {
     try {
@@ -119,6 +137,7 @@
       if (!filteredLabels.length) return null;
       const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
       const options = Object.assign({}, defaultOptions, extraOptions);
+      const colors = (extraOptions && extraOptions.colors) ? extraOptions.colors : generateColors(filteredLabels.length);
       // destroy any existing Chart instance on this canvas to allow re-render
       try {
         if (window.Chart && typeof Chart.getChart === 'function') {
@@ -129,7 +148,7 @@
 
       const chart = new Chart(canvas, {
         type: 'doughnut',
-        data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: (extraOptions && extraOptions.colors) || undefined, borderColor: '#ffffff', borderWidth: 1 }] },
+        data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: colors, borderColor: '#ffffff', borderWidth: 1 }] },
         options
       });
       return chart;

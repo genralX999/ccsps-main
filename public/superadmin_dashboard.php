@@ -106,13 +106,34 @@ async function fetchChart(type, params = {}) {
 }
 // Prefer the shared createDonut helper from ui-charts.js; fallback to local creation
 function localCreateDonut(ctx, labels, data, extraOptions = {}) {
-  const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
-  const options = Object.assign({}, defaultOptions, extraOptions);
-  return new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: (extraOptions && extraOptions.colors) || undefined, borderColor: '#ffffff', borderWidth: 1 }] },
-    options
-  });
+  try {
+    const filteredLabels = [];
+    const filteredData = [];
+    const force = extraOptions && extraOptions.forceRenderZeros;
+    for (let i = 0; i < (data || []).length; i++) {
+      const v = Number(data[i] || 0);
+      const lab = labels && labels[i] ? String(labels[i]) : '';
+      if (!force) {
+        if (v === 0 || lab === '') continue;
+      } else {
+        if (lab === '') continue;
+      }
+      filteredLabels.push(lab);
+      filteredData.push(v);
+    }
+    if (!filteredLabels.length) return null;
+    const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+    const options = Object.assign({}, defaultOptions, extraOptions);
+    const colors = (extraOptions && extraOptions.colors) ? extraOptions.colors : (window.getChartColors ? window.getChartColors(filteredLabels.length) : undefined);
+    return new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: colors, borderColor: '#ffffff', borderWidth: 1 }] },
+      options
+    });
+  } catch (e) {
+    console.error('localCreateDonut error', e);
+    return null;
+  }
 }
   // labelsOutside plugin is registered globally via public/js/ui-charts.js
 
