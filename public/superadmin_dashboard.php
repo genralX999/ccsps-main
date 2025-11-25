@@ -125,7 +125,10 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     try {
       console.debug('regionData', regionData);
       const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data);
-      if (!c) document.getElementById('regionDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+      if (!c) {
+        const card = document.getElementById('regionDonut').closest('.bg-white');
+        if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+      }
     } catch(e){ console.error('region chart failed', e); }
 
     const eventTypeData = await fetchChart('event_type');
@@ -135,7 +138,7 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     try {
       console.debug('eventTypeData', eventTypeData);
       const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
-      if (!c2) document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+      if (!c2) { const card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('eventType chart failed', e); }
 
     const userData = await fetchChart('user');
@@ -151,14 +154,14 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     try {
       console.debug('userData(filtered)', filtered);
       const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data);
-      if (!cu) document.getElementById('userDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+      if (!cu) { const card = document.getElementById('userDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('user chart failed', e); }
 
     try {
       const ratingData = await fetchChart('rating');
       console.debug('ratingData', ratingData);
       const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
-      if (!cr) document.getElementById('ratingDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+      if (!cr) { const card = document.getElementById('ratingDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('rating chart failed', e); }
   } catch (err) {
     console.error('Dashboard init error', err);

@@ -110,6 +110,8 @@
         filteredLabels.push(lab);
         filteredData.push(v);
       }
+      // if nothing remains after filtering, bail out
+      if (!filteredLabels.length) return null;
       const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
       const options = Object.assign({}, defaultOptions, extraOptions);
       const chart = new Chart(canvas, {

@@ -17,6 +17,42 @@ ob_start();
 		<a href="<?= baseUrl() ?>/submit_monitored.php" class="px-3 py-2 btn-brand text-white rounded">Submit New Report</a>
 </div>
 
+<!-- Charts: placed at page level (not inside filters card) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+	<div class="bg-white p-4 rounded shadow">
+		<h3 class="font-semibold mb-3">Reports by Event Type</h3>
+		<div class="h-48 flex items-center justify-center">
+			<div style="width:100%;max-width:520px;height:192px;">
+				<canvas id="eventTypeDonut" style="width:100%;height:100%;"></canvas>
+			</div>
+		</div>
+	</div>
+	<div class="bg-white p-4 rounded shadow">
+		<h3 class="font-semibold mb-3">Encoded Data by Region</h3>
+		<div class="h-48 flex items-center justify-center">
+			<div style="width:100%;max-width:520px;height:192px;">
+				<canvas id="regionDonut" style="width:100%;height:100%;"></canvas>
+			</div>
+		</div>
+	</div>
+	<div class="bg-white p-4 rounded shadow">
+		<h3 class="font-semibold mb-3">Encoded Data by User</h3>
+		<div class="h-48 flex items-center justify-center">
+			<div style="width:100%;max-width:520px;height:192px;">
+				<canvas id="userDonut" style="width:100%;height:100%;"></canvas>
+			</div>
+		</div>
+	</div>
+	<div class="bg-white p-4 rounded shadow">
+		<h3 class="font-semibold mb-3">Encoded Data by Rating</h3>
+		<div class="h-48 flex items-center justify-center">
+			<div style="width:100%;max-width:520px;height:192px;">
+				<canvas id="ratingDonut" style="width:100%;height:100%;"></canvas>
+			</div>
+		</div>
+	</div>
+</div>
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 		<div class="bg-white p-4 rounded shadow">
 				<h2 class="font-semibold mb-3">Reports by Event Type (All Monitors)</h2>
@@ -39,40 +75,7 @@ ob_start();
 					<button id="exportMonitoredBtn" class="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-white text-sm"></button>
 					<button id="exportXlsxBtn" class="ml-2 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">Export XLSX</button>
 				</div>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-				  <div class="bg-white p-4 rounded shadow">
-				    <h3 class="font-semibold mb-3">Reports by Event Type</h3>
-				    <div class="h-40 flex items-center justify-center">
-				      <div style="width:100%;max-width:420px;height:160px;">
-				        <canvas id="eventTypeDonut" style="width:100%;height:100%;"></canvas>
-				      </div>
-				    </div>
-				  </div>
-				  <div class="bg-white p-4 rounded shadow">
-				    <h3 class="font-semibold mb-3">Encoded Data by Region</h3>
-				    <div class="h-40 flex items-center justify-center">
-				      <div style="width:100%;max-width:420px;height:160px;">
-				        <canvas id="regionDonut" style="width:100%;height:100%;"></canvas>
-				      </div>
-				    </div>
-				  </div>
-				  <div class="bg-white p-4 rounded shadow">
-				    <h3 class="font-semibold mb-3">Encoded Data by User</h3>
-				    <div class="h-40 flex items-center justify-center">
-				      <div style="width:100%;max-width:420px;height:160px;">
-				        <canvas id="userDonut" style="width:100%;height:100%;"></canvas>
-				      </div>
-				    </div>
-				  </div>
-				  <div class="bg-white p-4 rounded shadow">
-				    <h3 class="font-semibold mb-3">Encoded Data by Rating</h3>
-				    <div class="h-40 flex items-center justify-center">
-				      <div style="width:100%;max-width:420px;height:160px;">
-				        <canvas id="ratingDonut" style="width:100%;height:100%;"></canvas>
-				      </div>
-				    </div>
-				  </div>
-				</div>
+
 				<div id="monitoredTable"></div>
 		</div>
 
@@ -99,10 +102,16 @@ async function fetchChart(type, params = {}) {
 			}
 			const eventColors = generateColors(eventTypeData.labels.length || 1);
 			const ce = (window.createDonut || function(){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
-			if (!ce) document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+			if (!ce) {
+				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
+				if (card) {
+					const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove();
+					card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+				}
+			}
 		} else {
 			document.getElementById('totalSubmissions').textContent = '0';
-			document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+			const _card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (_card) { const c = _card.querySelector('canvas'); if (c) c.remove(); _card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
 		}
 
 		// User donut (overall users)
@@ -116,19 +125,28 @@ async function fetchChart(type, params = {}) {
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
 		const cu = (window.createDonut || function(){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors });
-		if (!cu) document.getElementById('userDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+		if (!cu) {
+			const card = document.getElementById('userDonut').closest('.bg-white');
+			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
 
 		// Region chart
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
 		const cr = (window.createDonut || function(){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data);
-		if (!cr) document.getElementById('regionDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+		if (!cr) {
+			const card = document.getElementById('regionDonut').closest('.bg-white');
+			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
 
 		// Rating chart
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
 		const cr2 = (window.createDonut || function(){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
-		if (!cr2) document.getElementById('ratingDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+		if (!cr2) {
+			const card = document.getElementById('ratingDonut').closest('.bg-white');
+			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
 
 	} catch (err) {
 		console.error('Dashboard init error', err);
