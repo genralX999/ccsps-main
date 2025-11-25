@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input name="email" type="email" required class="w-full p-2 border rounded" />
           </label>
           <div class="flex items-center gap-2">
-            <button type="submit" class="px-3 py-2 rounded btn-brand text-blue">Send reset link</button>
+            <button type="submit" class="px-3 py-2 rounded border">Send reset link</button>
             <button type="button" id="forgotCancel" class="px-3 py-2 rounded border">Cancel</button>
           </div>
         </form>
