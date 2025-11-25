@@ -18,7 +18,14 @@ ob_start();
 </div>
 
 <!-- Charts: placed at page level (not inside filters card) -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div class="flex items-center justify-between mb-3">
+	<div class="text-sm text-gray-600">Charts</div>
+	<div class="flex items-center gap-3">
+		<label class="inline-flex items-center text-sm"><input id="forceZeros" type="checkbox" class="mr-2">Force render zeros</label>
+		<button id="showChartData" class="px-3 py-1 rounded border text-sm">Show chart data</button>
+	</div>
+</div>
+<div id="chartsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 	<div class="bg-white p-4 rounded shadow">
 		<h3 class="font-semibold mb-3">Reports by Event Type</h3>
 		<div class="h-48 flex items-center justify-center">
@@ -93,7 +100,7 @@ async function fetchChart(type, params = {}) {
 	return res.json();
 }
 
-(async function initDashboard(){
+window.initDashboard = async function initDashboard(){
 	try {
 		// Event type (all monitors)
 		const eventTypeData = await fetchChart('event_type', { exclude_superadmin: 1 });
@@ -105,7 +112,8 @@ async function fetchChart(type, params = {}) {
 				return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`);
 			}
 			const eventColors = generateColors(eventTypeData.labels.length || 1);
-			const ce = (window.createDonut || function(){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+			const forceFlag = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
+			const ce = (window.createDonut || function(){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors, forceRenderZeros: forceFlag });
 			if (!ce) {
 				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
 				if (card) {
@@ -139,7 +147,8 @@ async function fetchChart(type, params = {}) {
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
-		const cu = (window.createDonut || function(){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors });
+		const forceFlag2 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
+		const cu = (window.createDonut || function(){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors, forceRenderZeros: forceFlag2 });
 		if (!cu) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -149,7 +158,8 @@ async function fetchChart(type, params = {}) {
 		// Region chart
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
-		const cr = (window.createDonut || function(){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+		const forceFlag3 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
+		const cr = (window.createDonut || function(){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data, { forceRenderZeros: forceFlag3 });
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -159,7 +169,8 @@ async function fetchChart(type, params = {}) {
 		// Rating chart
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
-		const cr2 = (window.createDonut || function(){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
+		const forceFlag4 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
+		const cr2 = (window.createDonut || function(){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { forceRenderZeros: forceFlag4 });
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -170,7 +181,20 @@ async function fetchChart(type, params = {}) {
 		console.error('Dashboard init error', err);
 		if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
 	}
-})();
+};
+
+// initial run
+window.initDashboard().catch(err => console.error('initDashboard failed', err));
+
+// wire debug controls to re-run dashboard render
+const forceEl = document.getElementById('forceZeros');
+if (forceEl) {
+	forceEl.addEventListener('change', () => { try { window.initDashboard(); } catch(e){} });
+}
+const showBtn = document.getElementById('showChartData');
+if (showBtn) {
+	showBtn.addEventListener('click', (e) => { e.preventDefault(); try { window.initDashboard(); } catch(e){} });
+}
 </script>
 
 	<script>

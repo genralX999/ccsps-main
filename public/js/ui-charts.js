@@ -100,13 +100,18 @@
       const ctxEl = (typeof ctxOrSelector === 'string') ? document.querySelector(ctxOrSelector) : ctxOrSelector;
       if (!ctxEl) return null;
       const canvas = (ctxEl instanceof HTMLCanvasElement) ? ctxEl : ctxEl.querySelector('canvas') || ctxEl;
-      // filter zeros and empty labels
+      // filter zeros and empty labels unless caller requested forceRenderZeros
       const filteredLabels = [];
       const filteredData = [];
+      const force = extraOptions && extraOptions.forceRenderZeros;
       for (let i = 0; i < (data || []).length; i++) {
         const v = Number(data[i] || 0);
         const lab = labels && labels[i] ? String(labels[i]) : '';
-        if (v === 0 || lab === '') continue;
+        if (!force) {
+          if (v === 0 || lab === '') continue;
+        } else {
+          if (lab === '') continue;
+        }
         filteredLabels.push(lab);
         filteredData.push(v);
       }
@@ -114,6 +119,14 @@
       if (!filteredLabels.length) return null;
       const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
       const options = Object.assign({}, defaultOptions, extraOptions);
+      // destroy any existing Chart instance on this canvas to allow re-render
+      try {
+        if (window.Chart && typeof Chart.getChart === 'function') {
+          const prev = Chart.getChart(canvas);
+          if (prev && typeof prev.destroy === 'function') prev.destroy();
+        }
+      } catch (e) { /* ignore */ }
+
       const chart = new Chart(canvas, {
         type: 'doughnut',
         data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: (extraOptions && extraOptions.colors) || undefined, borderColor: '#ffffff', borderWidth: 1 }] },
