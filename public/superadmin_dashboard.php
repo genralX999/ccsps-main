@@ -123,13 +123,21 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
   try {
     // load and render 4 charts: region, event type, user (encoders), rating
     const regionData = await fetchChart('region');
-    try { createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data); } catch(e){ console.error('region chart failed', e); }
+    try {
+      console.debug('regionData', regionData);
+      const c = createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+      if (!c) document.getElementById('regionDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+    } catch(e){ console.error('region chart failed', e); }
 
     const eventTypeData = await fetchChart('event_type');
     // generate colors for event type chart
     function generateColors(n, sat=62, light=56) { return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`); }
     const eventColors = generateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
-    try { createDonut(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors }); } catch(e){ console.error('eventType chart failed', e); }
+    try {
+      console.debug('eventTypeData', eventTypeData);
+      const c2 = createDonut(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+      if (!c2) document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+    } catch(e){ console.error('eventType chart failed', e); }
 
     const userData = await fetchChart('user');
     // filter out any superadmin monitor codes from labels and data
@@ -141,9 +149,18 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
         filtered.data.push(userData.data[i]);
       }
     });
-    try { createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data); } catch(e){ console.error('user chart failed', e); }
+    try {
+      console.debug('userData(filtered)', filtered);
+      const cu = createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data);
+      if (!cu) document.getElementById('userDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+    } catch(e){ console.error('user chart failed', e); }
 
-    try { const ratingData = await fetchChart('rating'); createDonut(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data); } catch(e){ console.error('rating chart failed', e); }
+    try {
+      const ratingData = await fetchChart('rating');
+      console.debug('ratingData', ratingData);
+      const cr = createDonut(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
+      if (!cr) document.getElementById('ratingDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+    } catch(e){ console.error('rating chart failed', e); }
   } catch (err) {
     console.error('Dashboard init error', err);
     if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
@@ -155,8 +172,16 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
     const u = document.getElementById('filterUser').value;
     const qs = new URLSearchParams({ region_id: r, event_type_id: et, user_id: u });
     const res = await fetch('<?= dirname(baseUrl()) ?>/api/monitored.php?' + qs.toString());
+    if (!res.ok) {
+      document.getElementById('monitoredList').innerHTML = '<div class="text-sm text-red-600">Failed to load monitored records.</div>';
+      return;
+    }
     const html = await res.text();
-    document.getElementById('monitoredList').innerHTML = html;
+    if (!html || html.trim().length === 0) {
+      document.getElementById('monitoredList').innerHTML = '<div class="text-sm text-gray-600">No monitored records.</div>';
+    } else {
+      document.getElementById('monitoredList').innerHTML = html;
+    }
   }
   document.getElementById('applyFilters').addEventListener('click', loadMonitored);
   loadMonitored();
