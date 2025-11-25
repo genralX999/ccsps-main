@@ -107,6 +107,9 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
       const meta = chart.getDatasetMeta(0);
       const total = (data.datasets && data.datasets[0] && data.datasets[0].data) ? data.datasets[0].data.reduce((s, v) => s + Number(v || 0), 0) : 0;
       ctx.save();
+      const padding = 8;
+      const topBound = (chart.chartArea && chart.chartArea.top != null) ? (chart.chartArea.top + padding) : padding;
+      const bottomBound = (chart.chartArea && chart.chartArea.bottom != null) ? (chart.chartArea.bottom - padding) : (chart.canvas.height - padding);
       meta.data.forEach((arc, i) => {
         if (!arc) return;
         const start = arc.startAngle;
@@ -116,7 +119,10 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
         const lineStartX = arc.x + Math.cos(mid) * outer;
         const lineStartY = arc.y + Math.sin(mid) * outer;
         const labelX = arc.x + Math.cos(mid) * (outer + 18);
-        const labelY = arc.y + Math.sin(mid) * (outer + 18);
+        let labelY = arc.y + Math.sin(mid) * (outer + 18);
+        // clamp vertical position to chart area to avoid clipping
+        if (labelY < topBound) labelY = topBound;
+        if (labelY > bottomBound) labelY = bottomBound;
         ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lineStartX, lineStartY); ctx.lineTo(labelX, labelY); ctx.stroke();
         const value = (data.datasets[0].data[i] == null) ? 0 : data.datasets[0].data[i];
         const pct = total ? Math.round((Number(value) / total) * 100) : 0;

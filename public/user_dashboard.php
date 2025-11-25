@@ -134,8 +134,15 @@ async function fetchChart(type, params = {}) {
 							const text = `${data.labels[i]}: ${value} (${pct}%)`;
 							ctx.fillStyle = '#222'; ctx.font = '12px sans-serif';
 							ctx.textAlign = (Math.cos(mid) >= 0) ? 'left' : 'right'; ctx.textBaseline = 'middle';
+							// clamp vertical position to avoid clipping at top/bottom of canvas
+							const padding = 8;
+							const topBound = (chart.chartArea && chart.chartArea.top != null) ? (chart.chartArea.top + padding) : padding;
+							const bottomBound = (chart.chartArea && chart.chartArea.bottom != null) ? (chart.chartArea.bottom - padding) : (chart.canvas.height - padding);
+							let drawY = labelY;
+							if (drawY < topBound) drawY = topBound;
+							if (drawY > bottomBound) drawY = bottomBound;
 							const tx = (Math.cos(mid) >= 0) ? labelX + 6 : labelX - 6;
-							ctx.fillText(text, tx, labelY);
+							ctx.fillText(text, tx, drawY);
 						});
 						ctx.restore();
 					}
