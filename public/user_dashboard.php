@@ -20,10 +20,6 @@ ob_start();
 <!-- Charts: placed at page level (not inside filters card) -->
 <div class="flex items-center justify-between mb-3">
 	<div class="text-sm text-gray-600">Charts</div>
-	<div class="flex items-center gap-3">
-		<label class="inline-flex items-center text-sm"><input id="forceZeros" type="checkbox" class="mr-2">Force render zeros</label>
-		<button id="showChartData" class="px-3 py-1 rounded border text-sm">Show chart data</button>
-	</div>
 </div>
 <div id="chartsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 	<div class="bg-white p-4 rounded shadow">
@@ -172,8 +168,7 @@ window.initDashboard = async function initDashboard(){
 			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
 
 			const eventColors = pageGenerateColors(eventTypeData.labels.length || 1);
-			const forceFlag = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors, forceRenderZeros: forceFlag });
+			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
 			if (!ce) {
 				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
 				if (card) {
@@ -207,8 +202,7 @@ window.initDashboard = async function initDashboard(){
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
-		const forceFlag2 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
-		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors, forceRenderZeros: forceFlag2 });
+		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors });
 		if (!cu) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -218,9 +212,8 @@ window.initDashboard = async function initDashboard(){
 		// Region chart
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
-		const forceFlag3 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
 		const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
-		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { forceRenderZeros: forceFlag3, colors: regionColors });
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { colors: regionColors });
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -230,9 +223,8 @@ window.initDashboard = async function initDashboard(){
 		// Rating chart
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
-		const forceFlag4 = document.getElementById('forceZeros') ? document.getElementById('forceZeros').checked : false;
 		const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
-		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { forceRenderZeros: forceFlag4, colors: ratingColors });
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { colors: ratingColors });
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -248,15 +240,7 @@ window.initDashboard = async function initDashboard(){
 // initial run
 window.initDashboard().catch(err => console.error('initDashboard failed', err));
 
-// wire debug controls to re-run dashboard render
-const forceEl = document.getElementById('forceZeros');
-if (forceEl) {
-	forceEl.addEventListener('change', () => { try { window.initDashboard(); } catch(e){} });
-}
-const showBtn = document.getElementById('showChartData');
-if (showBtn) {
-	showBtn.addEventListener('click', (e) => { e.preventDefault(); try { window.initDashboard(); } catch(e){} });
-}
+// dashboard can be re-run via `window.initDashboard()` if needed
 </script>
 
 	<script>

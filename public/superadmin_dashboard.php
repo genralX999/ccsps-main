@@ -72,25 +72,47 @@ ob_start();
 <div class="mt-6 bg-white p-4 rounded shadow">
   <h3 class="font-semibold mb-3">Monitored Records</h3>
   <div class="flex gap-3 mb-4">
-    <select id="filterRegion" class="p-2 rounded border">
-      <option value="">All regions</option>
-      <?php foreach($regions as $r): ?>
-      <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <select id="filterEventType" class="p-2 rounded border">
-      <option value="">All event types</option>
-      <?php foreach($eventTypes as $et): ?>
-      <option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <select id="filterUser" class="p-2 rounded border">
-      <option value="">All users</option>
-      <?php foreach($usersForSelect as $u): ?>
-      <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['monitor_id_code']) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <button id="applyFilters" class="ml-auto px-4 py-2 rounded btn-brand text-white">Apply</button>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 w-full items-end">
+      <div>
+        <label for="filterRegion" class="text-sm text-gray-600 block mb-1">Region</label>
+        <select id="filterRegion" class="p-2 rounded border w-full">
+          <option value="">All regions</option>
+          <?php foreach($regions as $r): ?>
+          <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div>
+        <label for="filterEventType" class="text-sm text-gray-600 block mb-1">Event type</label>
+        <select id="filterEventType" class="p-2 rounded border w-full">
+          <option value="">All event types</option>
+          <?php foreach($eventTypes as $et): ?>
+          <option value="<?= $et['id'] ?>"><?= htmlspecialchars($et['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div>
+        <label for="filterUser" class="text-sm text-gray-600 block mb-1">User</label>
+        <select id="filterUser" class="p-2 rounded border w-full">
+          <option value="">All users</option>
+          <?php foreach($usersForSelect as $u): ?>
+          <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['monitor_id_code']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div>
+        <label for="filterDateFrom" class="text-sm text-gray-600 block mb-1">From (date)</label>
+        <input id="filterDateFrom" type="date" class="p-2 rounded border w-full" />
+      </div>
+      <div>
+        <label for="filterDateTo" class="text-sm text-gray-600 block mb-1">To (date)</label>
+        <input id="filterDateTo" type="date" class="p-2 rounded border w-full" />
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button id="applyFilters" class="px-4 py-2 rounded btn-brand text-white">Apply</button>
+        <button id="clearFilters" class="px-4 py-2 rounded border">Clear</button>
+      </div>
+    </div>
 
     <button id="exportAdminMonitoredXlsx" class="ml-2 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Export XLSX</button>
   </div>
@@ -198,10 +220,17 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
   }
 
   async function loadMonitored() {
-    const r = document.getElementById('filterRegion').value;
-    const et = document.getElementById('filterEventType').value;
-    const u = document.getElementById('filterUser').value;
-    const qs = new URLSearchParams({ region_id: r, event_type_id: et, user_id: u });
+    const r = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+    const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
+    const u = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+    const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+    const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+    const qs = new URLSearchParams();
+    if (r) qs.set('region_id', r);
+    if (et) qs.set('event_type_id', et);
+    if (u) qs.set('user_id', u);
+    if (dateFrom) qs.set('date_from', dateFrom);
+    if (dateTo) qs.set('date_to', dateTo);
     const res = await fetch('<?= dirname(baseUrl()) ?>/api/monitored.php?' + qs.toString());
     if (!res.ok) {
       document.getElementById('monitoredList').innerHTML = '<div class="text-sm text-red-600">Failed to load monitored records.</div>';
@@ -223,10 +252,18 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     if (btn) {
       e.preventDefault();
       const page = btn.getAttribute('data-page');
-      const r = document.getElementById('filterRegion').value;
-      const et = document.getElementById('filterEventType').value;
-      const u = document.getElementById('filterUser').value;
-      const qs = new URLSearchParams({ region_id: r, event_type_id: et, user_id: u, page });
+      const r = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+      const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
+      const u = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+      const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+      const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+      const qs = new URLSearchParams();
+      if (r) qs.set('region_id', r);
+      if (et) qs.set('event_type_id', et);
+      if (u) qs.set('user_id', u);
+      if (dateFrom) qs.set('date_from', dateFrom);
+      if (dateTo) qs.set('date_to', dateTo);
+      qs.set('page', page);
       const res = await fetch('<?= dirname(baseUrl()) ?>/api/monitored.php?' + qs.toString());
       const html = await res.text();
       document.getElementById('monitoredList').innerHTML = html;
@@ -245,10 +282,18 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
   const csvBtn = document.getElementById('exportAdminMonitored');
   if (csvBtn) {
     csvBtn.addEventListener('click', () => {
-      const r = document.getElementById('filterRegion').value;
-      const et = document.getElementById('filterEventType').value;
-      const u = document.getElementById('filterUser').value;
-      const qs = new URLSearchParams({ region_id: r, event_type_id: et, user_id: u, export: 'csv' });
+      const r = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+      const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
+      const u = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+      const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+      const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+      const qs = new URLSearchParams();
+      if (r) qs.set('region_id', r);
+      if (et) qs.set('event_type_id', et);
+      if (u) qs.set('user_id', u);
+      if (dateFrom) qs.set('date_from', dateFrom);
+      if (dateTo) qs.set('date_to', dateTo);
+      qs.set('export', 'csv');
       window.location = '<?= dirname(baseUrl()) ?>/api/monitored.php?' + qs.toString();
     });
   }
@@ -256,10 +301,17 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
   const exportAdminMonitoredXlsxBtn = document.getElementById('exportAdminMonitoredXlsx');
   if (exportAdminMonitoredXlsxBtn) {
     exportAdminMonitoredXlsxBtn.addEventListener('click', () => {
-      const r = document.getElementById('filterRegion').value;
-      const et = document.getElementById('filterEventType').value;
-      const u = document.getElementById('filterUser').value;
-      const qs = new URLSearchParams({ region_id: r, event_type_id: et, user_id: u });
+      const r = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
+      const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
+      const u = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+      const dateFrom = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+      const dateTo = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+      const qs = new URLSearchParams();
+      if (r) qs.set('region_id', r);
+      if (et) qs.set('event_type_id', et);
+      if (u) qs.set('user_id', u);
+      if (dateFrom) qs.set('date_from', dateFrom);
+      if (dateTo) qs.set('date_to', dateTo);
       // disable button briefly to prevent duplicate navigation
       exportAdminMonitoredXlsxBtn.disabled = true;
       window.location = '<?= dirname(baseUrl()) ?>/api/export_monitored_xlsx.php?' + qs.toString();
