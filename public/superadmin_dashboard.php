@@ -44,11 +44,26 @@ ob_start();
     </div>
   </div>
   <div class="bg-white p-4 rounded shadow">
+    <h2 class="font-semibold mb-3">Encoded Data by Event Type</h2>
+    <div class="h-48 flex items-center justify-center">
+      <div style="width:100%;max-width:520px;height:192px;">
+        <canvas id="eventTypeDonut" style="width:100%;height:100%;"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="bg-white p-4 rounded shadow">
     <h2 class="font-semibold mb-3">Encoded Data by User</h2>
-    <!-- user filter removed — chart shows all users (superadmin monitor IDs are excluded) -->
     <div class="h-48 flex items-center justify-center">
       <div style="width:100%;max-width:520px;height:192px;">
         <canvas id="userDonut" style="width:100%;height:100%;"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="font-semibold mb-3">Encoded Data by Rating</h2>
+    <div class="h-48 flex items-center justify-center">
+      <div style="width:100%;max-width:520px;height:192px;">
+        <canvas id="ratingDonut" style="width:100%;height:100%;"></canvas>
       </div>
     </div>
   </div>
@@ -89,35 +104,45 @@ async function fetchChart(type, params = {}) {
   const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
   return res.json();
 }
+// Prefer the shared createDonut helper from ui-charts.js; fallback to local creation
 function createDonut(ctx, labels, data, extraOptions = {}) {
+  if (window.createDonut) return window.createDonut(ctx, labels, data, extraOptions);
   const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
   const options = Object.assign({}, defaultOptions, extraOptions);
   return new Chart(ctx, {
     type: 'doughnut',
     data: { labels, datasets: [{ data }] },
-    options,
-    // labelsOutside plugin is registered globally via public/js/ui-charts.js
+    options
   });
 }
   // labelsOutside plugin is registered globally via public/js/ui-charts.js
 
 // side legend removed — labels drawn on-chart by plugin
 (async function(){
+  // load and render 4 charts: region, event type, user (encoders), rating
   const regionData = await fetchChart('region');
   createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+
+  const eventTypeData = await fetchChart('event_type');
+  // generate colors for event type chart
+  function generateColors(n, sat=62, light=56) { return Array.from({length: n}, (_, i) => `hsl(${Math.round(i * 360 / n)}, ${sat}%, ${light}%)`); }
+  const eventColors = generateColors(eventTypeData.labels.length || 1);
+  createDonut(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
 
   const userData = await fetchChart('user');
   // filter out any superadmin monitor codes from labels and data
   const superadminCodes = <?= json_encode(array_values($superadminCodes)) ?>;
   const filtered = { labels: [], data: [] };
-  userData.labels.forEach((lab, i) => {
-    if (!superadminCodes.includes(lab)) {
+  (userData.labels || []).forEach((lab, i) => {
+    if (!superadminCodes.includes(lab) && (userData.data && Number(userData.data[i] || 0) > 0)) {
       filtered.labels.push(lab);
       filtered.data.push(userData.data[i]);
     }
   });
+  createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data);
 
-  const userChart = createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data, { plugins: { legend: { display: false } } });
+  const ratingData = await fetchChart('rating');
+  createDonut(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
 
   async function loadMonitored() {
     const r = document.getElementById('filterRegion').value;

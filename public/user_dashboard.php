@@ -30,10 +30,15 @@ ob_start();
 												</div>
 										</div>
 		</div>
-		<!-- <div class="bg-white p-4 rounded shadow">
-				<h2 class="font-semibold mb-3">Your Recent Submissions</h2>
-				<div id="monitoredList"></div>
-		</div> -->
+
+		<div class="bg-white p-4 rounded shadow">
+			<h2 class="font-semibold mb-3">Encoded Data by Region</h2>
+			<div class="h-48 flex items-center justify-center">
+			  <div style="width:100%;max-width:520px;height:192px;">
+				<canvas id="regionDonut" style="width:100%;height:100%;"></canvas>
+			  </div>
+			</div>
+		</div>
 
 		<div class="bg-white p-4 rounded shadow">
 			<h2 class="font-semibold mb-3">Encoded Data by User</h2>
@@ -41,6 +46,15 @@ ob_start();
 				<div style="width:100%;max-width:520px;height:192px;">
 					<canvas id="userDonut" style="width:100%;height:100%;"></canvas>
 				</div>
+			</div>
+		</div>
+
+		<div class="bg-white p-4 rounded shadow">
+			<h2 class="font-semibold mb-3">Reports by Rating</h2>
+			<div class="h-48 flex items-center justify-center">
+			  <div style="width:100%;max-width:520px;height:192px;">
+				<canvas id="ratingDonut" style="width:100%;height:100%;"></canvas>
+			  </div>
 			</div>
 		</div>
 </div>
@@ -111,11 +125,7 @@ async function fetchChart(type, params = {}) {
 
 				// labelsOutside plugin moved to shared file: /public/js/ui-charts.js
 
-				const eventChart = new Chart(document.getElementById('eventTypeDonut'), {
-						type: 'doughnut',
-						data: { labels: eventTypeData.labels, datasets: [{ data: eventTypeData.data, backgroundColor: eventColors, borderColor: '#ffffff', borderWidth: 1 }] },
-						options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-				});
+				const eventChart = (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
 
 		// external legend removed from markup; labels drawn on-chart by plugin
 
@@ -132,11 +142,15 @@ async function fetchChart(type, params = {}) {
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData.labels || []).map(l => colorForString(l || String(Math.random())));
-		const userChart = new Chart(document.getElementById('userDonut'), {
-			type: 'doughnut',
-			data: { labels: userData.labels, datasets: [{ data: userData.data, backgroundColor: userColors, borderColor: '#ffffff', borderWidth: 1 }] },
-			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-		});
+		const userChart = (window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors });
+
+		// region chart (overall)
+		const regionData = await fetchChart('region');
+		(window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+
+		// rating chart
+		const ratingData = await fetchChart('rating');
+		(window.createDonut || function(a,b,c,d){ return null; })(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
 
 		// user legend container removed; labels drawn on-chart by plugin
 	} else {

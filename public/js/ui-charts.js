@@ -94,4 +94,33 @@
     }
   }
   registerPlugin();
+  // helper to create a donut, removes zero-value slices and returns Chart instance
+  window.createDonut = function(ctxOrSelector, labels, data, extraOptions = {}) {
+    try {
+      const ctxEl = (typeof ctxOrSelector === 'string') ? document.querySelector(ctxOrSelector) : ctxOrSelector;
+      if (!ctxEl) return null;
+      const canvas = (ctxEl instanceof HTMLCanvasElement) ? ctxEl : ctxEl.querySelector('canvas') || ctxEl;
+      // filter zeros and empty labels
+      const filteredLabels = [];
+      const filteredData = [];
+      for (let i = 0; i < (data || []).length; i++) {
+        const v = Number(data[i] || 0);
+        const lab = labels && labels[i] ? String(labels[i]) : '';
+        if (v === 0 || lab === '') continue;
+        filteredLabels.push(lab);
+        filteredData.push(v);
+      }
+      const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+      const options = Object.assign({}, defaultOptions, extraOptions);
+      const chart = new Chart(canvas, {
+        type: 'doughnut',
+        data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: (extraOptions && extraOptions.colors) || undefined, borderColor: '#ffffff', borderWidth: 1 }] },
+        options
+      });
+      return chart;
+    } catch (e) {
+      console.error('createDonut error', e);
+      return null;
+    }
+  };
 })();
