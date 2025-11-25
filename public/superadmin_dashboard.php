@@ -105,13 +105,12 @@ async function fetchChart(type, params = {}) {
   return res.json();
 }
 // Prefer the shared createDonut helper from ui-charts.js; fallback to local creation
-function createDonut(ctx, labels, data, extraOptions = {}) {
-  if (window.createDonut) return window.createDonut(ctx, labels, data, extraOptions);
+function localCreateDonut(ctx, labels, data, extraOptions = {}) {
   const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
   const options = Object.assign({}, defaultOptions, extraOptions);
   return new Chart(ctx, {
     type: 'doughnut',
-    data: { labels, datasets: [{ data }] },
+    data: { labels, datasets: [{ data, backgroundColor: (extraOptions && extraOptions.colors) || undefined, borderColor: '#ffffff', borderWidth: 1 }] },
     options
   });
 }
@@ -125,7 +124,7 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
     const regionData = await fetchChart('region');
     try {
       console.debug('regionData', regionData);
-      const c = createDonut(document.getElementById('regionDonut'), regionData.labels, regionData.data);
+      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data);
       if (!c) document.getElementById('regionDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
     } catch(e){ console.error('region chart failed', e); }
 
@@ -135,7 +134,7 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
     const eventColors = generateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
     try {
       console.debug('eventTypeData', eventTypeData);
-      const c2 = createDonut(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+      const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
       if (!c2) document.getElementById('eventTypeDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
     } catch(e){ console.error('eventType chart failed', e); }
 
@@ -151,14 +150,14 @@ function createDonut(ctx, labels, data, extraOptions = {}) {
     });
     try {
       console.debug('userData(filtered)', filtered);
-      const cu = createDonut(document.getElementById('userDonut'), filtered.labels, filtered.data);
+      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data);
       if (!cu) document.getElementById('userDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
     } catch(e){ console.error('user chart failed', e); }
 
     try {
       const ratingData = await fetchChart('rating');
       console.debug('ratingData', ratingData);
-      const cr = createDonut(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
+      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data);
       if (!cr) document.getElementById('ratingDonut').closest('.bg-white').insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
     } catch(e){ console.error('rating chart failed', e); }
   } catch (err) {

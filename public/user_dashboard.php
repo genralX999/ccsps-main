@@ -39,6 +39,40 @@ ob_start();
 					<button id="exportMonitoredBtn" class="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-white text-sm"></button>
 					<button id="exportXlsxBtn" class="ml-2 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">Export XLSX</button>
 				</div>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+				  <div class="bg-white p-4 rounded shadow">
+				    <h3 class="font-semibold mb-3">Reports by Event Type</h3>
+				    <div class="h-40 flex items-center justify-center">
+				      <div style="width:100%;max-width:420px;height:160px;">
+				        <canvas id="eventTypeDonut" style="width:100%;height:100%;"></canvas>
+				      </div>
+				    </div>
+				  </div>
+				  <div class="bg-white p-4 rounded shadow">
+				    <h3 class="font-semibold mb-3">Encoded Data by Region</h3>
+				    <div class="h-40 flex items-center justify-center">
+				      <div style="width:100%;max-width:420px;height:160px;">
+				        <canvas id="regionDonut" style="width:100%;height:100%;"></canvas>
+				      </div>
+				    </div>
+				  </div>
+				  <div class="bg-white p-4 rounded shadow">
+				    <h3 class="font-semibold mb-3">Encoded Data by User</h3>
+				    <div class="h-40 flex items-center justify-center">
+				      <div style="width:100%;max-width:420px;height:160px;">
+				        <canvas id="userDonut" style="width:100%;height:100%;"></canvas>
+				      </div>
+				    </div>
+				  </div>
+				  <div class="bg-white p-4 rounded shadow">
+				    <h3 class="font-semibold mb-3">Encoded Data by Rating</h3>
+				    <div class="h-40 flex items-center justify-center">
+				      <div style="width:100%;max-width:420px;height:160px;">
+				        <canvas id="ratingDonut" style="width:100%;height:100%;"></canvas>
+				      </div>
+				    </div>
+				  </div>
+				</div>
 				<div id="monitoredTable"></div>
 		</div>
 
