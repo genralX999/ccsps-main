@@ -93,8 +93,12 @@
     }
   };
 
-  // register plugin when Chart is available
+  // By default we disable the outside-labels plugin; use legends instead.
+  window.CCSP_DISABLE_LABELS_OUTSIDE = true;
+
+  // register plugin when Chart is available unless globally disabled
   function registerPlugin() {
+    if (window.CCSP_DISABLE_LABELS_OUTSIDE) return; // do not register
     if (window.Chart && Chart.register) {
       try { Chart.register(labelsOutside); window.labelsOutsidePlugin = labelsOutside; } catch (e) { /* ignore */ }
     } else {
