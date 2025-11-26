@@ -167,7 +167,7 @@ function renderActions(rows) {
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No actions yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-action px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
+    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-action px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-action px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
@@ -180,7 +180,7 @@ function renderEventTypes(rows) {
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No event types yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-et px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
+    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-et px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-et px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
@@ -193,7 +193,7 @@ function renderSubEventTypes(rows) {
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No sub event types yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Event Type ID</th><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2">${r.event_type_id}</td><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-sub px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
+    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2">${r.event_type_id}</td><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-sub px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-sub px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
@@ -206,7 +206,7 @@ function renderRegions(rows) {
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No regions yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-reg px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
+    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-reg px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-reg px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
