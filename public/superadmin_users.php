@@ -61,7 +61,11 @@ ob_start();
               <button class="px-2 py-1 rounded bg-blue-600 text-white text-sm resend-verify" data-id="<?= $u['id'] ?>">Resend</button>
             <?php endif; ?>
             <button class="px-2 py-1 rounded bg-red-600 text-white text-sm send-reset" data-email="<?= htmlspecialchars($u['email']) ?>">Reset</button>
-           
+            <?php if (($u['status'] ?? '') !== 'approved'): ?>
+              <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
+              <button class="px-2 py-1 rounded bg-gray-600 text-white text-sm decline-user" data-id="<?= $u['id'] ?>">Decline</button>
+            <?php endif; ?>
+            <?php
 
             if (($u['status'] ?? '') !== 'approved'): ?>
               <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
