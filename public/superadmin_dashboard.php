@@ -18,6 +18,9 @@ $eventTypes = $pdo->query("SELECT id, name FROM event_types ORDER BY name")->fet
 ob_start();
 ?>
 <h1 class="text-2xl font-semibold mb-4" style="color:#025529">Superadmin Dashboard</h1>
+<div class="flex items-center justify-end mb-3">
+  <label class="inline-flex items-center text-sm"><input id="toggleLegend" type="checkbox" class="mr-2" />Show legend on charts</label>
+</div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
   <div class="bg-white p-4 rounded shadow">
@@ -167,14 +170,15 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 
 // side legend removed — labels drawn on-chart by plugin
 // wrap dashboard logic to catch errors and report visibly
-(async function(){
+window.dashboardShowLegend = false;
+async function renderSuperadminCharts(){
   try {
     // load and render 4 charts: region, event type, user (encoders), rating
       const regionData = await fetchChart('region');
     try {
       console.debug('regionData', regionData);
       const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
-      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { colors: regionColors });
+      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
       if (!c) {
         const card = document.getElementById('regionDonut').closest('.bg-white');
         if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -186,7 +190,7 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     const eventColors = pageGenerateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
     try {
       console.debug('eventTypeData', eventTypeData);
-      const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+      const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
       if (!c2) { const card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('eventType chart failed', e); }
 
@@ -203,7 +207,7 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
     try {
       console.debug('userData(filtered)', filtered);
       const userColors = pageGenerateColors((filtered && filtered.labels ? filtered.labels.length : 0) || 1);
-      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data, { colors: userColors });
+      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
       if (!cu) { const card = document.getElementById('userDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('user chart failed', e); }
 
@@ -211,15 +215,27 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
       const ratingData = await fetchChart('rating');
       console.debug('ratingData', ratingData);
       const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
-      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { colors: ratingColors });
+      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
       if (!cr) { const card = document.getElementById('ratingDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('rating chart failed', e); }
-  } catch (err) {
+    } catch (err) {
     console.error('Dashboard init error', err);
     if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
   }
 
-  async function loadMonitored() {
+    // end charts
+}
+
+// initial render
+renderSuperadminCharts();
+
+// wire legend toggle
+const saToggle = document.getElementById('toggleLegend');
+if (saToggle) {
+  saToggle.addEventListener('change', (e) => { window.dashboardShowLegend = !!e.target.checked; renderSuperadminCharts(); });
+}
+
+async function loadMonitored() {
     const r = document.getElementById('filterRegion') ? document.getElementById('filterRegion').value : '';
     const et = document.getElementById('filterEventType') ? document.getElementById('filterEventType').value : '';
     const u = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
@@ -350,7 +366,6 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
   });
   // reload list when quick-view delete occurs
   document.addEventListener('quickview:deleted', loadMonitored);
-})();
 
 </script>
 

@@ -19,7 +19,10 @@ ob_start();
 
 <!-- Charts: placed at page level (not inside filters card) -->
 <div class="flex items-center justify-between mb-3">
-	<div class="text-sm text-gray-600">Charts</div>
+		<div class="text-sm text-gray-600">Charts</div>
+		<div class="flex items-center gap-3">
+			<label class="inline-flex items-center text-sm"><input id="toggleLegend" type="checkbox" class="mr-2" />Show legend</label>
+		</div>
 </div>
 <div id="chartsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 	<div class="bg-white p-4 rounded shadow">
@@ -159,6 +162,7 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 	}
 }
 
+window.dashboardShowLegend = false;
 window.initDashboard = async function initDashboard(){
 	try {
 		// Event type (all monitors)
@@ -168,7 +172,8 @@ window.initDashboard = async function initDashboard(){
 			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
 
 			const eventColors = pageGenerateColors(eventTypeData.labels.length || 1);
-			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+			const legendOpt = window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {};
+			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, legendOpt));
 			if (!ce) {
 				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
 				if (card) {
@@ -202,7 +207,7 @@ window.initDashboard = async function initDashboard(){
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
-		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors });
+		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
 		if (!cu) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -213,7 +218,7 @@ window.initDashboard = async function initDashboard(){
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
 		const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
-		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { colors: regionColors });
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -224,7 +229,7 @@ window.initDashboard = async function initDashboard(){
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
 		const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
-		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { colors: ratingColors });
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -241,6 +246,18 @@ window.initDashboard = async function initDashboard(){
 window.initDashboard().catch(err => console.error('initDashboard failed', err));
 
 // dashboard can be re-run via `window.initDashboard()` if needed
+</script>
+
+<script>
+// toggle behavior for legend rendering
+const toggleLegend = document.getElementById('toggleLegend');
+if (toggleLegend) {
+	toggleLegend.addEventListener('change', (e) => {
+		window.dashboardShowLegend = !!e.target.checked;
+		// re-run dashboard render
+		if (window.initDashboard) window.initDashboard();
+	});
+}
 </script>
 
 	<script>
