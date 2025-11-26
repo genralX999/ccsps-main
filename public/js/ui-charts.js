@@ -107,6 +107,15 @@
   }
   registerPlugin();
 
+  // Ensure plugin is not active even if it was registered previously (force-unregister).
+  try {
+    if (window.Chart && typeof Chart.unregister === 'function') {
+      Chart.unregister(labelsOutside);
+      // also clear any stored reference
+      if (window.labelsOutsidePlugin) window.labelsOutsidePlugin = null;
+    }
+  } catch (e) { /* ignore errors */ }
+
   // helper to disable/unregister the labelsOutside plugin at runtime
   window.disableLabelsOutside = function() {
     try {
