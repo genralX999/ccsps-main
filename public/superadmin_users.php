@@ -65,7 +65,17 @@ ob_start();
               <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
               <button class="px-2 py-1 rounded bg-gray-600 text-white text-sm decline-user" data-id="<?= $u['id'] ?>">Decline</button>
             <?php endif; ?>
+            <?php
+
+            if (($u['status'] ?? '') !== 'approved'): ?>
+              <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
+              <button class="px-2 py-1 rounded bg-gray-600 text-white text-sm decline-user" data-id="<?= $u['id'] ?>">Decline</button>
+            <?php endif; ?>
+          <button class="px-2 py-1 rounded text-white text-sm toggle-active" data-id="<?= $u['id'] ?>" data-active="<?= $isActive ?>" style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>"><?= $isActive ? 'Disable' : 'Enable' ?></button>
+          <?php if (($u['role'] ?? '') === 'user'): ?>
             <button class="px-2 py-1 rounded text-white text-sm toggle-active" data-id="<?= $u['id'] ?>" data-active="<?= $isActive ?>" style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>"><?= $isActive ? 'Disable' : 'Enable' ?></button>
+          <?php endif; ?>
+
           </div>
         </td>
       </tr>
