@@ -7,17 +7,12 @@ ob_start();
 ?>
 <h1 class="text-2xl font-semibold mb-4" style="color:#025529">Manage Taxonomy</h1>
 
+<!-- ===================== -->
+<!-- CREATE SECTION REORDERED -->
+<!-- ===================== -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white p-4 rounded shadow">
-    <h2 class="font-semibold mb-2">Create Action</h2>
-    <form id="createActionForm" data-endpoint="<?= dirname(baseUrl()) ?>/api/taxonomy.php">
-      <input name="name" placeholder="Action name" class="w-full p-2 border rounded mb-2" required />
-      <input type="hidden" name="type" value="action" />
-      <button type="submit" id="createActionBtn" class="px-3 py-2 btn-brand text-white rounded">Create</button>
-    </form>
-    <div id="actionResult" class="mt-2 text-sm"></div>
-  </div>
 
+  <!-- Create Event Type -->
   <div class="bg-white p-4 rounded shadow">
     <h2 class="font-semibold mb-2">Create Event Type</h2>
     <form id="createEventTypeForm" data-endpoint="<?= dirname(baseUrl()) ?>/api/taxonomy.php">
@@ -28,6 +23,7 @@ ob_start();
     <div id="eventTypeResult" class="mt-2 text-sm"></div>
   </div>
 
+  <!-- Create Sub Event Type -->
   <div class="bg-white p-4 rounded shadow">
     <h2 class="font-semibold mb-2">Create Sub Event Type</h2>
     <form id="createSubEventTypeForm" data-endpoint="<?= dirname(baseUrl()) ?>/api/taxonomy.php">
@@ -41,6 +37,18 @@ ob_start();
     <div id="subEventTypeResult" class="mt-2 text-sm"></div>
   </div>
 
+  <!-- Create Action -->
+  <div class="bg-white p-4 rounded shadow">
+    <h2 class="font-semibold mb-2">Create Action</h2>
+    <form id="createActionForm" data-endpoint="<?= dirname(baseUrl()) ?>/api/taxonomy.php">
+      <input name="name" placeholder="Action name" class="w-full p-2 border rounded mb-2" required />
+      <input type="hidden" name="type" value="action" />
+      <button type="submit" id="createActionBtn" class="px-3 py-2 btn-brand text-white rounded">Create</button>
+    </form>
+    <div id="actionResult" class="mt-2 text-sm"></div>
+  </div>
+
+  <!-- Create Region -->
   <div class="bg-white p-4 rounded shadow">
     <h2 class="font-semibold mb-2">Create Region</h2>
     <form id="createRegionForm" data-endpoint="<?= dirname(baseUrl()) ?>/api/regions.php">
@@ -49,28 +57,38 @@ ob_start();
     </form>
     <div id="regionResult" class="mt-2 text-sm"></div>
   </div>
+
 </div>
 
+<!-- ===================== -->
+<!-- LISTING SECTION REORDERED -->
+<!-- ===================== -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <div class="bg-white p-4 rounded shadow">
-    <h3 class="font-semibold mb-2">Actions</h3>
-    <div id="actionsList">Loading...</div>
-  </div>
 
+  <!-- Event Types -->
   <div class="bg-white p-4 rounded shadow">
     <h3 class="font-semibold mb-2">Event Types</h3>
     <div id="eventTypesList">Loading...</div>
   </div>
 
+  <!-- Sub Event Types -->
   <div class="bg-white p-4 rounded shadow">
     <h3 class="font-semibold mb-2">Sub Event Types</h3>
     <div id="subEventTypesList">Loading...</div>
   </div>
 
+  <!-- Actions -->
+  <div class="bg-white p-4 rounded shadow">
+    <h3 class="font-semibold mb-2">Actions</h3>
+    <div id="actionsList">Loading...</div>
+  </div>
+
+  <!-- Regions -->
   <div class="bg-white p-4 rounded shadow">
     <h3 class="font-semibold mb-2">Regions</h3>
     <div id="regionsList">Loading...</div>
   </div>
+
 </div>
 
 <script>
@@ -100,10 +118,8 @@ async function handleFormSubmit(formId, resultId, btnId) {
       const json = await res.json();
       if (json.success) {
         result.innerText = 'Created successfully.';
-        // reload lists for management (refreshes event types, regions, etc.)
         await loadLists();
       } else {
-        // map common server errors to friendly messages
         if (json.error === 'name_exists') {
           result.innerText = 'An item with that name already exists.';
         } else {
@@ -122,25 +138,23 @@ async function handleFormSubmit(formId, resultId, btnId) {
   handleFormSubmit('createEventTypeForm', 'eventTypeResult', 'createEventTypeBtn');
   handleFormSubmit('createSubEventTypeForm', 'subEventTypeResult', 'createSubEventTypeBtn');
   handleFormSubmit('createRegionForm', 'regionResult', 'createRegionBtn');
-  // also load lists for management
   loadLists();
 })();
 
 async function loadLists() {
   await loadEventTypes();
-  // actions
   const ares = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php?type=actions_all');
   const actions = await ares.json();
   renderActions(actions);
-  // event types
+
   const etres = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php?type=event_types_all');
   const ets = await etres.json();
   renderEventTypes(ets);
-  // sub event types
+
   const sres = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php?type=sub_event_types_all');
   const subs = await sres.json();
   renderSubEventTypes(subs);
-  // regions
+
   const rres = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php');
   const regs = await rres.json();
   renderRegions(regs);
@@ -155,7 +169,8 @@ function renderActions(rows) {
   rows.forEach(r => {
     table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-action px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
   });
-  table.push('</tbody></table>'); container.innerHTML = table.join('');
+  table.push('</tbody></table>');
+  container.innerHTML = table.join('');
   container.querySelectorAll('.edit-action').forEach(b => b.addEventListener('click', onEditAction));
   container.querySelectorAll('.delete-action').forEach(b => b.addEventListener('click', onDeleteAction));
 }
@@ -167,7 +182,8 @@ function renderEventTypes(rows) {
   rows.forEach(r => {
     table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-et px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
   });
-  table.push('</tbody></table>'); container.innerHTML = table.join('');
+  table.push('</tbody></table>');
+  container.innerHTML = table.join('');
   container.querySelectorAll('.edit-et').forEach(b => b.addEventListener('click', onEditEventType));
   container.querySelectorAll('.delete-et').forEach(b => b.addEventListener('click', onDeleteEventType));
 }
@@ -179,7 +195,8 @@ function renderSubEventTypes(rows) {
   rows.forEach(r => {
     table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2">${r.event_type_id}</td><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-sub px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
   });
-  table.push('</tbody></table>'); container.innerHTML = table.join('');
+  table.push('</tbody></table>');
+  container.innerHTML = table.join('');
   container.querySelectorAll('.edit-sub').forEach(b => b.addEventListener('click', onEditSub));
   container.querySelectorAll('.delete-sub').forEach(b => b.addEventListener('click', onDeleteSub));
 }
@@ -191,7 +208,8 @@ function renderRegions(rows) {
   rows.forEach(r => {
     table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-reg px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button></td></tr>`);
   });
-  table.push('</tbody></table>'); container.innerHTML = table.join('');
+  table.push('</tbody></table>');
+  container.innerHTML = table.join('');
   container.querySelectorAll('.edit-reg').forEach(b => b.addEventListener('click', onEditRegion));
   container.querySelectorAll('.delete-reg').forEach(b => b.addEventListener('click', onDeleteRegion));
 }
@@ -202,13 +220,26 @@ async function onEditAction(e){
   const tr = e.target.closest('tr'); startInlineEdit(tr, 'action');
 }
 async function onDeleteAction(e){
-  const tr = e.target.closest('tr'); await doDelete('action', tr.dataset.id); }
-async function onEditEventType(e){ startInlineEdit(e.target.closest('tr'), 'event_type'); }
-async function onDeleteEventType(e){ await doDelete('event_type', e.target.closest('tr').dataset.id); }
-async function onEditSub(e){ startInlineEdit(e.target.closest('tr'), 'sub_event_type'); }
-async function onDeleteSub(e){ await doDelete('sub_event_type', e.target.closest('tr').dataset.id); }
-async function onEditRegion(e){ startInlineEdit(e.target.closest('tr'), 'region'); }
-async function onDeleteRegion(e){ await doDelete('region', e.target.closest('tr').dataset.id); }
+  const tr = e.target.closest('tr'); await doDelete('action', tr.dataset.id);
+}
+async function onEditEventType(e){
+  startInlineEdit(e.target.closest('tr'), 'event_type');
+}
+async function onDeleteEventType(e){
+  await doDelete('event_type', e.target.closest('tr').dataset.id);
+}
+async function onEditSub(e){
+  startInlineEdit(e.target.closest('tr'), 'sub_event_type');
+}
+async function onDeleteSub(e){
+  await doDelete('sub_event_type', e.target.closest('tr').dataset.id);
+}
+async function onEditRegion(e){
+  startInlineEdit(e.target.closest('tr'), 'region');
+}
+async function onDeleteRegion(e){
+  await doDelete('region', e.target.closest('tr').dataset.id);
+}
 
 function startInlineEdit(tr, type) {
   const nameCell = tr.querySelector('.name');
@@ -217,20 +248,24 @@ function startInlineEdit(tr, type) {
   nameCell.innerHTML = `<input class="w-full p-1 border rounded" value="${escapeHtml(current)}" />`;
   const actionsCell = tr.querySelector('td:last-child');
   actionsCell.innerHTML = `<button class="save btn-save px-2 py-1 mr-2 bg-green-500 text-white rounded text-sm">Save</button><button class="btn-cancel px-2 py-1 bg-gray-300 rounded text-sm">Cancel</button>`;
-  actionsCell.querySelector('.btn-cancel').addEventListener('click', ()=>{ nameCell.textContent = current; actionsCell.innerHTML = `<button class="edit px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button>`; attachRowHandlers(tr, type); });
-    actionsCell.querySelector('.btn-save').addEventListener('click', async ()=>{
+  actionsCell.querySelector('.btn-cancel').addEventListener('click', ()=>{
+    nameCell.textContent = current;
+    actionsCell.innerHTML = `<button class="edit px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button>`;
+    attachRowHandlers(tr, type);
+  });
+
+  actionsCell.querySelector('.btn-save').addEventListener('click', async ()=>{
     const newName = nameCell.querySelector('input').value.trim();
-      if (!newName) { showToast('Name required', 'error'); return; }
+    if (!newName) { showToast('Name required', 'error'); return; }
+
     if (type === 'region') {
       const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id, name: newName}) });
       const j = await res.json();
       if (j.success) { await loadLists(); } else { showToast(j.error === 'name_exists' ? 'A region with that name already exists.' : (j.error||JSON.stringify(j)), 'error'); }
     } else {
       const payload = {type: type, id: id, name: newName};
-      // include event_type_id when editing sub_event_type inline if present on the row
       const evtIdCell = tr.querySelector('td:first-child');
       if (type === 'sub_event_type' && evtIdCell) {
-        // the first column contains event_type_id in sub_event_types list
         const evt = tr.querySelector('td')?.textContent?.trim();
         if (evt) payload.event_type_id = parseInt(evt, 10) || undefined;
       }
@@ -251,14 +286,19 @@ async function doDelete(type, id) {
   try {
     if (type === 'region') {
         const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id}) });
-          const j = await res.json(); if (j.success) await loadLists(); else showToast(j.error||JSON.stringify(j), 'error');
+        const j = await res.json();
+        if (j.success) await loadLists();
+        else showToast(j.error||JSON.stringify(j), 'error');
     } else {
-          const res = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: type, id: id}) });
-          const j = await res.json(); if (j.success) await loadLists(); else showToast(j.error||JSON.stringify(j), 'error');
+        const res = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: type, id: id}) });
+        const j = await res.json();
+        if (j.success) await loadLists();
+        else showToast(j.error||JSON.stringify(j), 'error');
     }
-  } catch (err) { showToast('Request failed: '+(err.message||err), 'error'); }
+  } catch (err) {
+    showToast('Request failed: '+(err.message||err), 'error');
+  }
 }
-
 </script>
 
 <?php
