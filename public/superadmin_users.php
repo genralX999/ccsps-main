@@ -75,13 +75,17 @@ ob_start();
     <?php endif; ?>
 
     <!-- Enable/Disable (only ONE button) -->
-    <button
-      class="px-2 py-1 rounded text-white text-sm toggle-active"
-      data-id="<?= $u['id'] ?>"
-      data-active="<?= $isActive ?>"
-      style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>">
-      <?= $isActive ? 'Disable' : 'Enable' ?>
-    </button>
+    <!-- Enable/Disable (hide if the target user is superadmin) -->
+<?php if ($u['role'] !== 'superadmin'): ?>
+  <button
+    class="px-2 py-1 rounded text-white text-sm toggle-active"
+    data-id="<?= $u['id'] ?>"
+    data-active="<?= $isActive ?>"
+    style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>">
+    <?= $isActive ? 'Disable' : 'Enable' ?>
+  </button>
+<?php endif; ?>
+
 
   </div>
 </td>
