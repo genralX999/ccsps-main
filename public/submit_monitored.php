@@ -2,10 +2,10 @@
 require_once __DIR__ . '/../includes/init.php';
 requireAuth();
 $user = currentUser($pdo);
-// load selects
-$regions = $pdo->query('SELECT id,name FROM regions ORDER BY name')->fetchAll();
-$event_types = $pdo->query('SELECT id,name FROM event_types ORDER BY name')->fetchAll();
-$actions = $pdo->query('SELECT id,name FROM actions ORDER BY name')->fetchAll();
+// load selects (only active records)
+$regions = $pdo->query('SELECT id,name FROM regions WHERE is_active = 1 ORDER BY name')->fetchAll();
+$event_types = $pdo->query('SELECT id,name FROM event_types WHERE is_active = 1 ORDER BY name')->fetchAll();
+$actions = $pdo->query('SELECT id,name FROM actions WHERE is_active = 1 ORDER BY name')->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $event_date = $_POST['event_date'] ?? null;
