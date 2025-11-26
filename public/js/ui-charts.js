@@ -102,6 +102,19 @@
     }
   }
   registerPlugin();
+
+  // helper to disable/unregister the labelsOutside plugin at runtime
+  window.disableLabelsOutside = function() {
+    try {
+      if (window.Chart && window.labelsOutsidePlugin && Chart.unregister) {
+        Chart.unregister(window.labelsOutsidePlugin);
+        window.labelsOutsidePlugin = null;
+      }
+    } catch (e) {
+      console.error('disableLabelsOutside failed', e);
+    }
+    window.CCSP_DISABLE_LABELS_OUTSIDE = true;
+  };
   // helper to generate a pleasing HSL-based color palette
   function generateColors(n, sat=62, light=56, hueOffset=0) {
     if (!n || n <= 0) return ['hsl(200,60%,60%)'];

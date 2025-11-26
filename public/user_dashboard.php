@@ -166,6 +166,9 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 window.dashboardShowLegend = (localStorage.getItem('ccsps_dashboard_show_legend') === '1');
 // when legend is shown we want to disable outside labels globally to avoid duplicates
 window.CCSP_DISABLE_LABELS_OUTSIDE = !!window.dashboardShowLegend;
+if (window.CCSP_DISABLE_LABELS_OUTSIDE && window.disableLabelsOutside) {
+	try { window.disableLabelsOutside(); } catch (e) { /* ignore */ }
+}
 const toggleEl = document.getElementById('toggleLegend'); if (toggleEl) toggleEl.checked = !!window.dashboardShowLegend;
 window.initDashboard = async function initDashboard(){
 	try {
