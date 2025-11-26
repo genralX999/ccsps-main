@@ -5,6 +5,9 @@
     id: 'labelsOutside',
     afterDraw: function(chart) {
       try {
+        // allow per-chart opt-out via options.plugins.labelsOutside.display = false
+        const lblOpt = chart && chart.options && chart.options.plugins && chart.options.plugins.labelsOutside;
+        if (lblOpt && lblOpt.display === false) return;
         const ctx = chart.ctx;
         const data = chart.data;
         const meta = chart.getDatasetMeta(0);

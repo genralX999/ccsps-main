@@ -170,7 +170,9 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 
 // side legend removed — labels drawn on-chart by plugin
 // wrap dashboard logic to catch errors and report visibly
-window.dashboardShowLegend = false;
+// read persisted legend preference
+window.dashboardShowLegend = (localStorage.getItem('ccsps_dashboard_show_legend') === '1');
+const saToggleEl = document.getElementById('toggleLegend'); if (saToggleEl) saToggleEl.checked = !!window.dashboardShowLegend;
 async function renderSuperadminCharts(){
   try {
     // load and render 4 charts: region, event type, user (encoders), rating
@@ -178,7 +180,7 @@ async function renderSuperadminCharts(){
     try {
       console.debug('regionData', regionData);
       const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
-      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+      const c = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
       if (!c) {
         const card = document.getElementById('regionDonut').closest('.bg-white');
         if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -190,7 +192,7 @@ async function renderSuperadminCharts(){
     const eventColors = pageGenerateColors((eventTypeData && eventTypeData.labels && eventTypeData.labels.length) || 1);
     try {
       console.debug('eventTypeData', eventTypeData);
-      const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+      const c2 = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
       if (!c2) { const card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('eventType chart failed', e); }
 
@@ -207,7 +209,7 @@ async function renderSuperadminCharts(){
     try {
       console.debug('userData(filtered)', filtered);
       const userColors = pageGenerateColors((filtered && filtered.labels ? filtered.labels.length : 0) || 1);
-      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+      const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), filtered.labels, filtered.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
       if (!cu) { const card = document.getElementById('userDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('user chart failed', e); }
 
@@ -215,7 +217,7 @@ async function renderSuperadminCharts(){
       const ratingData = await fetchChart('rating');
       console.debug('ratingData', ratingData);
       const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
-      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+      const cr = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
       if (!cr) { const card = document.getElementById('ratingDonut').closest('.bg-white'); if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); } }
     } catch(e){ console.error('rating chart failed', e); }
     } catch (err) {
@@ -232,7 +234,7 @@ renderSuperadminCharts();
 // wire legend toggle
 const saToggle = document.getElementById('toggleLegend');
 if (saToggle) {
-  saToggle.addEventListener('change', (e) => { window.dashboardShowLegend = !!e.target.checked; renderSuperadminCharts(); });
+  saToggle.addEventListener('change', (e) => { window.dashboardShowLegend = !!e.target.checked; try { localStorage.setItem('ccsps_dashboard_show_legend', window.dashboardShowLegend ? '1' : '0'); } catch (e) {} renderSuperadminCharts(); });
 }
 
 async function loadMonitored() {

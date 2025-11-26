@@ -162,7 +162,9 @@ function localCreateDonut(ctx, labels, data, extraOptions = {}) {
 	}
 }
 
-window.dashboardShowLegend = false;
+// initialize legend preference from localStorage
+window.dashboardShowLegend = (localStorage.getItem('ccsps_dashboard_show_legend') === '1');
+const toggleEl = document.getElementById('toggleLegend'); if (toggleEl) toggleEl.checked = !!window.dashboardShowLegend;
 window.initDashboard = async function initDashboard(){
 	try {
 		// Event type (all monitors)
@@ -172,7 +174,7 @@ window.initDashboard = async function initDashboard(){
 			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
 
 			const eventColors = pageGenerateColors(eventTypeData.labels.length || 1);
-			const legendOpt = window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {};
+			const legendOpt = window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {};
 			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, legendOpt));
 			if (!ce) {
 				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
@@ -207,7 +209,7 @@ window.initDashboard = async function initDashboard(){
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
-		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
 		if (!cu) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -218,7 +220,7 @@ window.initDashboard = async function initDashboard(){
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
 		const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
-		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -229,7 +231,7 @@ window.initDashboard = async function initDashboard(){
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
 		const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
-		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' } } } : {}));
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -254,6 +256,7 @@ const toggleLegend = document.getElementById('toggleLegend');
 if (toggleLegend) {
 	toggleLegend.addEventListener('change', (e) => {
 		window.dashboardShowLegend = !!e.target.checked;
+		try { localStorage.setItem('ccsps_dashboard_show_legend', window.dashboardShowLegend ? '1' : '0'); } catch (e) {}
 		// re-run dashboard render
 		if (window.initDashboard) window.initDashboard();
 	});
