@@ -174,8 +174,29 @@ window.initDashboard = async function initDashboard(){
 			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
 
 			const eventColors = pageGenerateColors(eventTypeData.labels.length || 1);
-			const legendOpt = window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {};
-			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, legendOpt));
+						const legendOpt = window.dashboardShowLegend ? {
+							plugins: {
+								legend: {
+									display: true,
+									position: 'right',
+									labels: {
+										generateLabels: function(chart) {
+											const data = chart.data || {};
+											const ds = data.datasets && data.datasets[0] ? data.datasets[0] : null;
+											const labels = data.labels || [];
+											const totals = ds && ds.data ? ds.data.reduce((s, v) => s + Number(v || 0), 0) : 0;
+											return labels.map((label, i) => {
+												const value = ds && ds.data && typeof ds.data[i] !== 'undefined' ? ds.data[i] : 0;
+												const pct = totals ? Math.round((Number(value) / totals) * 100) : 0;
+												return { text: `${label} — ${value} (${pct}%)`, fillStyle: (ds && ds.backgroundColor && ds.backgroundColor[i]) || '#000', hidden: false, index: i };
+											});
+										}
+									}
+								},
+								labelsOutside: { display: false }
+							}
+						} : {};
+						const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, Object.assign({ colors: eventColors }, legendOpt));
 			if (!ce) {
 				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
 				if (card) {
@@ -209,7 +230,7 @@ window.initDashboard = async function initDashboard(){
 			return `hsl(${h}, ${sat}%, ${light}%)`;
 		}
 		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
-		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
+		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, Object.assign({ colors: userColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right', labels: { generateLabels: function(chart){ const data = chart.data||{}; const ds = data.datasets && data.datasets[0] ? data.datasets[0] : null; const labels = data.labels||[]; const totals = ds && ds.data ? ds.data.reduce((s,v)=>s+Number(v||0),0) : 0; return labels.map((label,i)=>{ const value = ds && ds.data && typeof ds.data[i] !== 'undefined' ? ds.data[i] : 0; const pct = totals ? Math.round((Number(value)/totals)*100) : 0; return { text: `${label} — ${value} (${pct}%)`, fillStyle: (ds && ds.backgroundColor && ds.backgroundColor[i]) || '#000', hidden:false, index:i }; }); } } }, labelsOutside: { display: false } } } : {}));
 		if (!cu) {
 			const card = document.getElementById('userDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -220,7 +241,7 @@ window.initDashboard = async function initDashboard(){
 		const regionData = await fetchChart('region');
 		console.debug('regionData', regionData);
 		const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
-		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, Object.assign({ colors: regionColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right', labels: { generateLabels: function(chart){ const data = chart.data||{}; const ds = data.datasets && data.datasets[0] ? data.datasets[0] : null; const labels = data.labels||[]; const totals = ds && ds.data ? ds.data.reduce((s,v)=>s+Number(v||0),0) : 0; return labels.map((label,i)=>{ const value = ds && ds.data && typeof ds.data[i] !== 'undefined' ? ds.data[i] : 0; const pct = totals ? Math.round((Number(value)/totals)*100) : 0; return { text: `${label} — ${value} (${pct}%)`, fillStyle: (ds && ds.backgroundColor && ds.backgroundColor[i]) || '#000', hidden:false, index:i }; }); } } }, labelsOutside: { display: false } } } : {}));
 		if (!cr) {
 			const card = document.getElementById('regionDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -231,7 +252,7 @@ window.initDashboard = async function initDashboard(){
 		const ratingData = await fetchChart('rating');
 		console.debug('ratingData', ratingData);
 		const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
-		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right' }, labelsOutside: { display: false } } } : {}));
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, Object.assign({ colors: ratingColors }, window.dashboardShowLegend ? { plugins: { legend: { display: true, position: 'right', labels: { generateLabels: function(chart){ const data = chart.data||{}; const ds = data.datasets && data.datasets[0] ? data.datasets[0] : null; const labels = data.labels||[]; const totals = ds && ds.data ? ds.data.reduce((s,v)=>s+Number(v||0),0) : 0; return labels.map((label,i)=>{ const value = ds && ds.data && typeof ds.data[i] !== 'undefined' ? ds.data[i] : 0; const pct = totals ? Math.round((Number(value)/totals)*100) : 0; return { text: `${label} — ${value} (${pct}%)`, fillStyle: (ds && ds.backgroundColor && ds.backgroundColor[i]) || '#000', hidden:false, index:i }; }); } } }, labelsOutside: { display: false } } } : {}));
 		if (!cr2) {
 			const card = document.getElementById('ratingDonut').closest('.bg-white');
 			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
@@ -253,12 +274,12 @@ window.initDashboard().catch(err => console.error('initDashboard failed', err));
 <script>
 // toggle behavior for legend rendering
 const toggleLegend = document.getElementById('toggleLegend');
-if (toggleLegend) {
+	if (toggleLegend) {
 	toggleLegend.addEventListener('change', (e) => {
 		window.dashboardShowLegend = !!e.target.checked;
 		try { localStorage.setItem('ccsps_dashboard_show_legend', window.dashboardShowLegend ? '1' : '0'); } catch (e) {}
-		// re-run dashboard render
-		if (window.initDashboard) window.initDashboard();
+		// reload page so charts render with consistent options
+		window.location.reload();
 	});
 }
 </script>

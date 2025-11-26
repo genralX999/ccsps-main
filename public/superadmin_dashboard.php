@@ -233,8 +233,13 @@ renderSuperadminCharts();
 
 // wire legend toggle
 const saToggle = document.getElementById('toggleLegend');
-if (saToggle) {
-  saToggle.addEventListener('change', (e) => { window.dashboardShowLegend = !!e.target.checked; try { localStorage.setItem('ccsps_dashboard_show_legend', window.dashboardShowLegend ? '1' : '0'); } catch (e) {} renderSuperadminCharts(); });
+  if (saToggle) {
+  saToggle.addEventListener('change', (e) => {
+    window.dashboardShowLegend = !!e.target.checked;
+    try { localStorage.setItem('ccsps_dashboard_show_legend', window.dashboardShowLegend ? '1' : '0'); } catch (err) {}
+    // reload page to ensure plugin state is consistent
+    window.location.reload();
+  });
 }
 
 async function loadMonitored() {
