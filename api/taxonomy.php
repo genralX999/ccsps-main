@@ -93,8 +93,29 @@ try {
 
     if ($method === 'PUT') {
         $id = intval($data['id'] ?? 0);
+        // support status updates (restore) via is_active in PUT
+        if (!$id || !$type) { http_response_code(400); echo json_encode(['error'=>'id_and_type_required']); exit; }
+        if (isset($data['is_active'])) {
+            $isActive = intval($data['is_active']) ? 1 : 0;
+            if ($type === 'action') {
+                $stmt = $pdo->prepare('UPDATE actions SET is_active = :ia, updated_at = NOW() WHERE id = :id'); $stmt->execute([':ia'=>$isActive, ':id'=>$id]);
+                logActivity($pdo, $_SESSION['user_id'], 'update_status', 'actions', $id, ['is_active'=>$isActive]);
+                echo json_encode(['success'=>true]); exit;
+            }
+            if ($type === 'event_type') {
+                $stmt = $pdo->prepare('UPDATE event_types SET is_active = :ia, updated_at = NOW() WHERE id = :id'); $stmt->execute([':ia'=>$isActive, ':id'=>$id]);
+                logActivity($pdo, $_SESSION['user_id'], 'update_status', 'event_types', $id, ['is_active'=>$isActive]);
+                echo json_encode(['success'=>true]); exit;
+            }
+            if ($type === 'sub_event_type') {
+                $stmt = $pdo->prepare('UPDATE sub_event_types SET is_active = :ia, updated_at = NOW() WHERE id = :id'); $stmt->execute([':ia'=>$isActive, ':id'=>$id]);
+                logActivity($pdo, $_SESSION['user_id'], 'update_status', 'sub_event_types', $id, ['is_active'=>$isActive]);
+                echo json_encode(['success'=>true]); exit;
+            }
+            http_response_code(400); echo json_encode(['error'=>'unknown_type']); exit;
+        }
         $name = trim($data['name'] ?? '');
-        if (!$id || !$type || $name === '') { http_response_code(400); echo json_encode(['error'=>'id_type_name_required']); exit; }
+        if ($name === '') { http_response_code(400); echo json_encode(['error'=>'name_required']); exit; }
         if ($type === 'action') {
             // duplicate name check excluding current id
             $chk = $pdo->prepare('SELECT COUNT(*) FROM actions WHERE LOWER(name) = LOWER(:name) AND id != :id');

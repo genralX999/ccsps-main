@@ -35,8 +35,16 @@ if ($method === 'POST') {
 
 if ($method === 'PUT') {
     $id = intval($data['id'] ?? 0);
+    if (!$id) { http_response_code(400); echo json_encode(['error'=>'id_required']); exit; }
+    if (isset($data['is_active'])) {
+        $isActive = intval($data['is_active']) ? 1 : 0;
+        $stmt = $pdo->prepare('UPDATE regions SET is_active = :ia, updated_at = NOW() WHERE id = :id');
+        $stmt->execute([':ia'=>$isActive, ':id'=>$id]);
+        logActivity($pdo, $_SESSION['user_id'], 'update_status', 'regions', $id, ['is_active'=>$isActive]);
+        echo json_encode(['success'=>true]); exit;
+    }
     $name = trim($data['name'] ?? '');
-    if (!$id || $name === '') { http_response_code(400); echo json_encode(['error'=>'id_and_name_required']); exit; }
+    if ($name === '') { http_response_code(400); echo json_encode(['error'=>'name_required']); exit; }
     // duplicate name check excluding current id
     $chk = $pdo->prepare('SELECT COUNT(*) FROM regions WHERE LOWER(name) = LOWER(:name) AND id != :id');
     $chk->execute([':name'=>$name, ':id'=>$id]);

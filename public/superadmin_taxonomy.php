@@ -7,6 +7,10 @@ ob_start();
 ?>
 <h1 class="text-2xl font-semibold mb-4" style="color:#025529">Manage Taxonomy</h1>
 
+<div class="flex items-center gap-4 mb-4">
+  <label class="inline-flex items-center text-sm"><input id="showInactive" type="checkbox" class="mr-2" />Show inactive</label>
+</div>
+
 <!-- ===================== -->
 <!-- CREATE SECTION REORDERED -->
 <!-- ===================== -->
@@ -142,76 +146,105 @@ async function handleFormSubmit(formId, resultId, btnId) {
 })();
 
 async function loadLists() {
+  const showInactive = document.getElementById('showInactive') ? document.getElementById('showInactive').checked : false;
   await loadEventTypes();
   const ares = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php?type=actions_all');
   const actions = await ares.json();
-  renderActions(actions);
+  renderActions(actions, showInactive);
 
   const etres = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php?type=event_types_all');
   const ets = await etres.json();
-  renderEventTypes(ets);
+  renderEventTypes(ets, showInactive);
 
   const sres = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php?type=sub_event_types_all');
   const subs = await sres.json();
-  renderSubEventTypes(subs);
+  renderSubEventTypes(subs, showInactive);
 
   const rres = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php');
   const regs = await rres.json();
-  renderRegions(regs);
+  renderRegions(regs, showInactive);
+
+  // wire the showInactive toggle to reload
+  const si = document.getElementById('showInactive');
+  if (si && !si._bound) { si._bound = true; si.addEventListener('change', loadLists); }
 }
 
 function el(html) { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
 
-function renderActions(rows) {
+function renderActions(rows, showInactive) {
   const container = document.getElementById('actionsList');
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No actions yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-action px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-action px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
+    if (!showInactive && r.is_active == 0) return; // skip inactive unless asked
+    const inactiveClass = r.is_active == 0 ? 'opacity-60' : '';
+    const actionButtons = r.is_active == 1
+      ? `<button class="edit-action px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-action px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button>`
+      : `<button class="edit-action px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="restore-action px-2 py-1 bg-green-600 text-white rounded text-sm">Restore</button>`;
+    table.push(`<tr class="border-t ${inactiveClass}" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right">${actionButtons}</td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
   container.querySelectorAll('.edit-action').forEach(b => b.addEventListener('click', onEditAction));
   container.querySelectorAll('.delete-action').forEach(b => b.addEventListener('click', onDeleteAction));
+  container.querySelectorAll('.restore-action').forEach(b => b.addEventListener('click', onRestoreAction));
 }
 
-function renderEventTypes(rows) {
+function renderEventTypes(rows, showInactive) {
   const container = document.getElementById('eventTypesList');
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No event types yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-et px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-et px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
+    if (!showInactive && r.is_active == 0) return;
+    const inactiveClass = r.is_active == 0 ? 'opacity-60' : '';
+    const actionButtons = r.is_active == 1
+      ? `<button class="edit-et px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-et px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button>`
+      : `<button class="edit-et px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="restore-et px-2 py-1 bg-green-600 text-white rounded text-sm">Restore</button>`;
+    table.push(`<tr class="border-t ${inactiveClass}" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right">${actionButtons}</td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
   container.querySelectorAll('.edit-et').forEach(b => b.addEventListener('click', onEditEventType));
   container.querySelectorAll('.delete-et').forEach(b => b.addEventListener('click', onDeleteEventType));
+  container.querySelectorAll('.restore-et').forEach(b => b.addEventListener('click', onRestoreEventType));
 }
 
-function renderSubEventTypes(rows) {
+function renderSubEventTypes(rows, showInactive) {
   const container = document.getElementById('subEventTypesList');
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No sub event types yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Event Type ID</th><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2">${r.event_type_id}</td><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-sub px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-sub px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
+    if (!showInactive && r.is_active == 0) return;
+    const inactiveClass = r.is_active == 0 ? 'opacity-60' : '';
+    const actionButtons = r.is_active == 1
+      ? `<button class="edit-sub px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-sub px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button>`
+      : `<button class="edit-sub px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="restore-sub px-2 py-1 bg-green-600 text-white rounded text-sm">Restore</button>`;
+    table.push(`<tr class="border-t ${inactiveClass}" data-id="${r.id}"><td class="p-2">${r.event_type_id}</td><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right">${actionButtons}</td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
   container.querySelectorAll('.edit-sub').forEach(b => b.addEventListener('click', onEditSub));
   container.querySelectorAll('.delete-sub').forEach(b => b.addEventListener('click', onDeleteSub));
+  container.querySelectorAll('.restore-sub').forEach(b => b.addEventListener('click', onRestoreSub));
 }
 
-function renderRegions(rows) {
+function renderRegions(rows, showInactive) {
   const container = document.getElementById('regionsList');
   if (!rows.length) { container.innerHTML = '<div class="text-sm">No regions yet.</div>'; return; }
   const table = ['<table class="w-full text-sm"><thead><tr><th>Name</th><th class="text-right">Actions</th></tr></thead><tbody>'];
   rows.forEach(r => {
-    table.push(`<tr class="border-t" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right"><button class="edit-reg px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-reg px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button></td></tr>`);
+    if (!showInactive && r.is_active == 0) return;
+    const inactiveClass = r.is_active == 0 ? 'opacity-60' : '';
+    const actionButtons = r.is_active == 1
+      ? `<button class="edit-reg px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="delete-reg px-2 py-1 bg-red-500 text-white rounded text-sm">Delete</button>`
+      : `<button class="edit-reg px-2 py-1 mr-2 bg-yellow-300 rounded text-sm">Edit</button><button class="restore-reg px-2 py-1 bg-green-600 text-white rounded text-sm">Restore</button>`;
+    table.push(`<tr class="border-t ${inactiveClass}" data-id="${r.id}"><td class="p-2 name">${escapeHtml(r.name)}</td><td class="p-2 text-right">${actionButtons}</td></tr>`);
   });
   table.push('</tbody></table>');
   container.innerHTML = table.join('');
   container.querySelectorAll('.edit-reg').forEach(b => b.addEventListener('click', onEditRegion));
   container.querySelectorAll('.delete-reg').forEach(b => b.addEventListener('click', onDeleteRegion));
+  container.querySelectorAll('.restore-reg').forEach(b => b.addEventListener('click', onRestoreRegion));
 }
 
 function escapeHtml(s){ return (s+'').replace(/[&<>"]+/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c)); }
@@ -282,7 +315,7 @@ function attachRowHandlers(tr, type) {
 }
 
 async function doDelete(type, id) {
-  if (!confirm('Delete this item?')) return;
+  if (!confirm('This will soft-delete (mark inactive). Continue?')) return;
   try {
     if (type === 'region') {
         const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id}) });
@@ -299,6 +332,27 @@ async function doDelete(type, id) {
     showToast('Request failed: '+(err.message||err), 'error');
   }
 }
+
+async function doRestore(type, id) {
+  try {
+    if (type === 'region') {
+      const res = await fetch('<?= dirname(baseUrl()) ?>/api/regions.php', { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: id, is_active: 1}) });
+      const j = await res.json();
+      if (j.success) await loadLists(); else showToast(j.error||JSON.stringify(j), 'error');
+    } else {
+      const res = await fetch('<?= dirname(baseUrl()) ?>/api/taxonomy.php', { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type: type, id: id, is_active: 1}) });
+      const j = await res.json();
+      if (j.success) await loadLists(); else showToast(j.error||JSON.stringify(j), 'error');
+    }
+  } catch (err) {
+    showToast('Request failed: '+(err.message||err), 'error');
+  }
+}
+
+async function onRestoreAction(e){ await doRestore('action', e.target.closest('tr').dataset.id); }
+async function onRestoreEventType(e){ await doRestore('event_type', e.target.closest('tr').dataset.id); }
+async function onRestoreSub(e){ await doRestore('sub_event_type', e.target.closest('tr').dataset.id); }
+async function onRestoreRegion(e){ await doRestore('region', e.target.closest('tr').dataset.id); }
 </script>
 
 <?php
