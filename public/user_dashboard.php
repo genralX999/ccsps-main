@@ -19,10 +19,7 @@ ob_start();
 
 <!-- Charts: placed at page level (not inside filters card) -->
 <div class="flex items-center justify-between mb-3">
-		<div class="text-sm text-gray-600">Charts</div>
-		<div class="flex items-center gap-3">
-			<label class="inline-flex items-center text-sm"><input id="toggleLegend" type="checkbox" class="mr-2" />Show legend</label>
-		</div>
+	<div class="text-sm text-gray-600">Charts</div>
 </div>
 <div id="chartsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 	<div class="bg-white p-4 rounded shadow">
@@ -116,19 +113,134 @@ ob_start();
 
 <script src="<?= dirname(baseUrl()) ?>/public/js/ui-charts.js"></script>
 
-
-
 <script>
-// toggle behavior for legend rendering
-const toggleLegend = document.getElementById('toggleLegend');
-	if (toggleLegend) {
-	toggleLegend.addEventListener('change', (e) => {
-		window.dashboardShowLegend = !!e.target.checked;
-		try { localStorage.setItem('ccsps_dashboard_show_legend', window.dashboardShowLegend ? '1' : '0'); } catch (e) {}
-		// reload page so charts render with consistent options
-		window.location.reload();
-	});
+async function fetchChart(type, params = {}) {
+	const q = new URLSearchParams({...params, type});
+	const res = await fetch('<?= dirname(baseUrl()) ?>/api/stats.php?' + q.toString());
+	return res.json();
 }
+
+// page-level palette helper: prefer shared `window.getChartColors` when available
+function pageGenerateColors(n, sat=62, light=56, hueOffset=0) {
+    if (window.getChartColors) return window.getChartColors(n, sat, light, hueOffset);
+    if (!n || n <= 0) return ['hsl(200,60%,60%)'];
+    return Array.from({length: n}, (_, i) => `hsl(${Math.round((i * 360 / n) + hueOffset) % 360}, ${sat}%, ${light}%)`);
+}
+
+// local fallback used when shared helper is unavailable
+function localCreateDonut(ctx, labels, data, extraOptions = {}) {
+	try {
+		const filteredLabels = [];
+		const filteredData = [];
+		const force = extraOptions && extraOptions.forceRenderZeros;
+		for (let i = 0; i < (data || []).length; i++) {
+			const v = Number(data[i] || 0);
+			const lab = labels && labels[i] ? String(labels[i]) : '';
+			if (!force) {
+				if (v === 0 || lab === '') continue;
+			} else {
+				if (lab === '') continue;
+			}
+			filteredLabels.push(lab);
+			filteredData.push(v);
+		}
+		if (!filteredLabels.length) return null;
+		const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+		const options = Object.assign({}, defaultOptions, extraOptions);
+		const colors = (extraOptions && extraOptions.colors) ? extraOptions.colors : (window.getChartColors ? window.getChartColors(filteredLabels.length) : undefined);
+		return new Chart(ctx, {
+			type: 'doughnut',
+			data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: colors, borderColor: '#ffffff', borderWidth: 1 }] },
+			options
+		});
+	} catch (e) {
+		console.error('localCreateDonut error', e);
+		return null;
+	}
+}
+
+window.initDashboard = async function initDashboard(){
+	try {
+		// Event type (all monitors)
+		const eventTypeData = await fetchChart('event_type', { exclude_superadmin: 1 });
+		console.debug('eventTypeData', eventTypeData);
+		if (eventTypeData && eventTypeData.labels && eventTypeData.data) {
+			const total = eventTypeData.data.reduce((s, v) => s + Number(v || 0), 0);
+
+			const eventColors = pageGenerateColors(eventTypeData.labels.length || 1);
+			const ce = (window.createDonut || localCreateDonut)(document.getElementById('eventTypeDonut'), eventTypeData.labels, eventTypeData.data, { colors: eventColors });
+			if (!ce) {
+				const card = document.getElementById('eventTypeDonut').closest('.bg-white');
+				if (card) {
+					const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove();
+					card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>');
+				}
+			}
+			// debug payload display when ?debug_charts=1 is present
+			try {
+				if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) {
+					const card = document.getElementById('eventTypeDonut').closest('.bg-white');
+					if (card) {
+						const pre = document.createElement('pre');
+						pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700';
+						pre.textContent = JSON.stringify(eventTypeData, null, 2);
+						card.appendChild(pre);
+					}
+				}
+			} catch(e) { /* ignore */ }
+		} else {
+			const _card = document.getElementById('eventTypeDonut').closest('.bg-white'); if (_card) { const c = _card.querySelector('canvas'); if (c) c.remove(); _card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
+
+		// User donut (overall users)
+		const userData = await fetchChart('user');
+		console.debug('userData', userData);
+		function colorForString(s, sat=48, light=50, hueOffset=180) {
+			let h = 0;
+			for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+			h = (h + hueOffset) % 360;
+			return `hsl(${h}, ${sat}%, ${light}%)`;
+		}
+		const userColors = (userData && userData.labels ? userData.labels : []).map(l => colorForString(l || String(Math.random())));
+		const cu = (window.createDonut || localCreateDonut)(document.getElementById('userDonut'), userData.labels, userData.data, { colors: userColors });
+		if (!cu) {
+			const card = document.getElementById('userDonut').closest('.bg-white');
+			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
+		try { if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) { const card = document.getElementById('userDonut').closest('.bg-white'); if (card) { const pre = document.createElement('pre'); pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700'; pre.textContent = JSON.stringify(userData, null, 2); card.appendChild(pre); } } } catch(e){}
+
+		// Region chart
+		const regionData = await fetchChart('region');
+		console.debug('regionData', regionData);
+		const regionColors = pageGenerateColors((regionData && regionData.labels ? regionData.labels.length : 0) || 1);
+		const cr = (window.createDonut || localCreateDonut)(document.getElementById('regionDonut'), regionData.labels, regionData.data, { colors: regionColors });
+		if (!cr) {
+			const card = document.getElementById('regionDonut').closest('.bg-white');
+			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
+		try { if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) { const card = document.getElementById('regionDonut').closest('.bg-white'); if (card) { const pre = document.createElement('pre'); pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700'; pre.textContent = JSON.stringify(regionData, null, 2); card.appendChild(pre); } } } catch(e){}
+
+		// Rating chart
+		const ratingData = await fetchChart('rating');
+		console.debug('ratingData', ratingData);
+		const ratingColors = pageGenerateColors((ratingData && ratingData.labels ? ratingData.labels.length : 0) || 1, 56, 48);
+		const cr2 = (window.createDonut || localCreateDonut)(document.getElementById('ratingDonut'), ratingData.labels, ratingData.data, { colors: ratingColors });
+		if (!cr2) {
+			const card = document.getElementById('ratingDonut').closest('.bg-white');
+			if (card) { const canvasEl = card.querySelector('canvas'); if (canvasEl) canvasEl.remove(); card.insertAdjacentHTML('beforeend', '<div class="mt-3 text-sm text-gray-500">No data available.</div>'); }
+		}
+		try { if (window.location && window.location.search && window.location.search.indexOf('debug_charts=1') !== -1) { const card = document.getElementById('ratingDonut').closest('.bg-white'); if (card) { const pre = document.createElement('pre'); pre.style.maxHeight = '160px'; pre.style.overflow = 'auto'; pre.className = 'mt-2 text-xs text-gray-700'; pre.textContent = JSON.stringify(ratingData, null, 2); card.appendChild(pre); } } } catch(e){}
+
+	} catch (err) {
+		console.error('Dashboard init error', err);
+		if (window.showToast) showToast('Dashboard error: ' + (err && err.message ? err.message : String(err)), 'error', 6000);
+	}
+};
+
+// initial run
+window.initDashboard().catch(err => console.error('initDashboard failed', err));
+
+// dashboard can be re-run via `window.initDashboard()` if needed
 </script>
 
 	<script>
