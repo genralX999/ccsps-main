@@ -54,30 +54,38 @@ ob_start();
         <td class="px-4 py-2 text-sm"><?= htmlspecialchars($u['email']) ?></td>
         <td class="px-4 py-2 text-sm"><?= htmlspecialchars($u['role']) ?></td>
         <td class="px-4 py-2 text-sm"><?= htmlspecialchars($u['status'] ?? '') ?></td>
-        <td class="px-4 py-2 text-sm">
-          <div class="flex items-center gap-2">
-            <button class="px-2 py-1 rounded bg-yellow-500 text-white text-sm edit-user" data-id="<?= $u['id'] ?>">Edit</button>
-            <?php if (($u['status'] ?? '') !== 'approved'): ?>
-              <button class="px-2 py-1 rounded bg-blue-600 text-white text-sm resend-verify" data-id="<?= $u['id'] ?>">Resend</button>
-            <?php endif; ?>
-            <button class="px-2 py-1 rounded bg-red-600 text-white text-sm send-reset" data-email="<?= htmlspecialchars($u['email']) ?>">Reset</button>
-            <?php if (($u['status'] ?? '') !== 'approved'): ?>
-              <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
-              <button class="px-2 py-1 rounded bg-gray-600 text-white text-sm decline-user" data-id="<?= $u['id'] ?>">Decline</button>
-            <?php endif; ?>
-            <?php
+       <td class="px-4 py-2 text-sm">
+  <div class="flex items-center gap-2">
 
-            if (($u['status'] ?? '') !== 'approved'): ?>
-              <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
-              <button class="px-2 py-1 rounded bg-gray-600 text-white text-sm decline-user" data-id="<?= $u['id'] ?>">Decline</button>
-            <?php endif; ?>
-          <button class="px-2 py-1 rounded text-white text-sm toggle-active" data-id="<?= $u['id'] ?>" data-active="<?= $isActive ?>" style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>"><?= $isActive ? 'Disable' : 'Enable' ?></button>
-          <?php if (($u['role'] ?? '') === 'user'): ?>
-            <button class="px-2 py-1 rounded text-white text-sm toggle-active" data-id="<?= $u['id'] ?>" data-active="<?= $isActive ?>" style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>"><?= $isActive ? 'Disable' : 'Enable' ?></button>
-          <?php endif; ?>
+    <!-- Edit -->
+    <button class="px-2 py-1 rounded bg-yellow-500 text-white text-sm edit-user" data-id="<?= $u['id'] ?>">Edit</button>
 
-          </div>
-        </td>
+    <!-- Resend email (only if not approved) -->
+    <?php if (($u['status'] ?? '') !== 'approved'): ?>
+      <button class="px-2 py-1 rounded bg-blue-600 text-white text-sm resend-verify" data-id="<?= $u['id'] ?>">Resend</button>
+    <?php endif; ?>
+
+    <!-- Reset Password -->
+    <button class="px-2 py-1 rounded bg-red-600 text-white text-sm send-reset" data-email="<?= htmlspecialchars($u['email']) ?>">Reset</button>
+
+    <!-- Approve / Decline (only if not approved) -->
+    <?php if (($u['status'] ?? '') !== 'approved'): ?>
+      <button class="px-2 py-1 rounded bg-green-600 text-white text-sm approve-user" data-id="<?= $u['id'] ?>">Approve</button>
+      <button class="px-2 py-1 rounded bg-gray-600 text-white text-sm decline-user" data-id="<?= $u['id'] ?>">Decline</button>
+    <?php endif; ?>
+
+    <!-- Enable/Disable (only ONE button) -->
+    <button
+      class="px-2 py-1 rounded text-white text-sm toggle-active"
+      data-id="<?= $u['id'] ?>"
+      data-active="<?= $isActive ?>"
+      style="background-color:<?= $isActive ? '#6B7280' : '#10B981' ?>">
+      <?= $isActive ? 'Disable' : 'Enable' ?>
+    </button>
+
+  </div>
+</td>
+
       </tr>
       <?php endforeach; ?>
     </tbody>
