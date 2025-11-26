@@ -5,6 +5,8 @@
     id: 'labelsOutside',
     afterDraw: function(chart) {
       try {
+        // allow global opt-out via window.CCSP_DISABLE_LABELS_OUTSIDE
+        if (window && window.CCSP_DISABLE_LABELS_OUTSIDE) return;
         // allow per-chart opt-out. Support either `options.plugins.labelsOutside = { display: false }`
         // or `options.plugins.labelsOutside === false` or `options.labelsOutside` at top-level.
         const opts = chart && chart.options;
