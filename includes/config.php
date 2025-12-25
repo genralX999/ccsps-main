@@ -16,7 +16,7 @@ return [
         // SMTP settings (Gmail SMTP with app password)
         'smtp_host'   => 'mail.cecoe.org',
 'smtp_user'   => 'firaol@cecoe.org',
-'smtp_pass'   => '1%80^C^YyPU3_%Md', 
+'smtp_pass'   => '', 
 'smtp_port'   => 465,
 'smtp_secure' => 'ssl',
 'from'        => 'firaol@cecoe.org',
